@@ -27,7 +27,7 @@ source("../prep (May 2025).r")
 
 ## 2.1 Markov's Inequality
 
-### 2.1.1 Introduction and application
+### 2.1.1 Application
 
 Markov's Inequality states the following:
 
@@ -98,8 +98,6 @@ Let's do that again, but this time grouping terms around our threshold $a=4$.[^1
 $$E[X] = \sum\limits_{x_i < a} x_i \cdot P(X = x_i) + \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$ In the example we're working with, that would be
 
 $E(X) = \Big[ (1)(.4) + (2)(.2) \Big] + \Big[ (4)(.2) + (8)(.1) + (16)(.1) \Big]$
-
-$2+2
 
 We're only interested in the second part of the decomposition. What happens if we remove the first part where $a\lt 4$?
 
@@ -453,5 +451,5 @@ tagList(
 )
 ```
 
-## Chebushev's Inequality
+## 2.2 Chebushev's Inequality
 
