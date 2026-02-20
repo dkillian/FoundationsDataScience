@@ -1,0 +1,484 @@
+---
+title: "Foundations of Data Science"
+subtitle: "Chapter notes for textbook by Blum et al 2020"
+author: "Dan Killian"
+date: 2-1-2026
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute: 
+  keep-md: true
+server: shiny
+editor: visual
+reference-location: margin
+---
+
+```{r global_options, include=F, warning=F, message=F, echo=F, error=F}
+library(here)
+library(knitr)
+getwd()
+source("../prep (May 2025).r")
+```
+
+# 2 High Dimensional Space
+
+## 2.1 Markov's Inequality
+
+### 2.1.1 Introduction and application
+
+Markov's Inequality states the following:
+
+$P(X \geq a) \leq \frac{E(X)}{a}$
+
+The probability of some data point in the distribution X exceeding some threshold value $a$ cannot exceed the average of the distribution divided by $a$.
+
+When all we know about a distribution is it's mean, Markov's Inequality sets an upper bound on the probability of observing a particular value of any data point in the distribution.
+
+How might this look in practice?
+
+Let $X$ be a discrete random variable with values $x_1, x_2, \ldots, x_n$ and probabilities $p_1, p_2, \ldots, p_n$ where $X \geq 0$.
+
+```{r}
+
+x <- c(1, 2, 4, 8, 16)
+p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+
+dis <- tibble(x=x,
+              p=p)
+
+dis %>%
+    flextable()
+```
+
+We get the expected value, or average, of the variable by summing over each value in the distribution times its weight.
+
+$$E(X) = \sum_i x_i \cdot P(X = x_i)$$ $E(X)$ = $(1)(.4) + (2)(.2) + (4)(.2) + (8)(.1) + (16)(.1)$
+
+So $E(X)$ = `r sum(x*p)`
+
+```{r}
+EX <- sum(x * p)
+```
+
+Now let's establish some arbitrary threshold $a\geq4$
+
+In this example, what is $P(X\geq a)\leq\frac{E(X)}{a}$?
+
+$P(X\geq4)\leq\frac{4}{4}\leq 1$
+
+An obvious case, because the data point is also the mean!
+
+What if $a\geq8$?
+
+$P(X\geq8)\leq\frac{4}{8}\leq.5$
+
+For a distribution with mean four, only half of all values of the distribution may exceed eight. If more than half of values in the distribution exceeded eight, it would shift the mean!
+
+$a\geq16$?
+
+$P(X\ge16)\leq\frac{4}{16}\leq.25$
+
+For a distribution of mean four, at most 25 percent of all data values may exceed 16. As soon as more than 25 percent of data values exceed four, it will shift the mean.
+
+### 2.1.2 Derivation
+
+Let's work out how we can derive Markov's Inequality, and offer additional illustrations
+
+Note how we computed $E(X)$ as the sum of all values times their weight.
+
+$$E(X) = \sum_i x_i \cdot P(X = x_i)$$
+
+Let's do that again, but this time grouping terms around our threshold $a=4$.[^1]
+
+[^1]: This is the Law of Total Expectation: $E(X) = E(X|A)P(A) + E(X|A^c)P(A^c)$
+
+$$E[X] = \sum\limits_{x_i < a} x_i \cdot P(X = x_i) + \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$ In the example we're working with, that would be
+
+$E(X) = \Big[ (1)(.4) + (2)(.2) \Big] + \Big[ (4)(.2) + (8)(.1) + (16)(.1) \Big]$
+
+$2+2
+
+We're only interested in the second part of the decomposition. What happens if we remove the first part where $a\lt 4$?
+
+Since all values of $X$ are non-negative, that means we are removing positive values from the sum. Because we are removing positive values from the sum, the result of the operation will be less than $E(X)$. Therefore, $E(X)$ will be the same as or higher than the remaining sum.
+
+This allows us to replace the equality with greater than or equal to.
+
+$$E(X) \geq \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$
+
+Returning to our example, that would be
+
+$E(X) \geq (4)(.2) + (8)(.1) + (16)(.1)$
+
+Recall that $E(X)=4$ and $E(X\geq4)=.8 + .8 + 1.6 = 3.2$
+
+$4\geq3.2$ and our inequality holds
+
+Let's go back to the generalized notation:
+
+$$E(X) \geq \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$
+
+Note that our remaining $x_i$ values are greater than or equal to $a$. So our inequality still holds if we replace all the $X\geq a$ with just $a$.
+
+$$E(X) \geq \sum\limits_{x_i \geq a} a \cdot P(X = x_i)$$ We're still summing over the same values where $x_i\geq a$, but now we multiply by $a$ instead of $x_i$.
+
+This is where the loosening of the bound occurs! Back to our simple example for $a=4$, what is the expected value?
+
+$x_i$ = 4: 4 \* 0.2 = 0.8\
+$x_i$ = 8: 8 \* 0.1 = 0.8\
+$x_i$ = 16: 16 \* 0.1 = 1.6
+
+Add them up: 4 \* 0.2 + 8 \* 0.1 + 16 \* 0.1 = 3.2
+
+Now we repeat that step, but use only $a$ - a lesser value:
+
+$x_i$ = 4: 4 \* 0.2 = 0.8\
+$x_i$ = 8: 4 \* 0.1 = 0.4\
+$x_i$ = 16: 4 \* 0.1 = 0.4
+
+Add them up: 4 \* 0.2 + 4 \* 0.1 + 4 \* 0.1 = 1.6
+
+We loosened the bound, in order to derive the proof.
+
+Now let's factor out the constant, based on the linearity of the summation operator.
+
+$$E(X) \geq a\cdot \sum\limits_{x_i \geq a} P(X = x_i)$$
+
+Now note that the summation of all $x_i\geq a$ is just the cumulative probability of $x\geq a$. So let's replace the summation operator with the cumulative probability.
+
+$$E(X) \geq a \cdot P(X \geq a)$$
+
+Solve for the probability to get Markov's Inequality
+
+$$P(X \geq a) \leq \frac{E(X)}{a}$$
+
+Recap:
+
+-   After establishing some arbitrary threshold $a$, we used the Law of Total Expectation to group the values of the distribution below and above the threshold.
+
+-   We dropped all terms below the threshold. In doing this, we ensure that the remaining sum is less than the expected value (because the expected value is the sum of all terms).
+
+-   Knowing that the expected value is the same as or higher than the remaining terms, we replaced the equality operator in the total expectation with a greater than or equal to operator after dropping the terms less than $a$.
+
+-   Knowing that the remaining values of $X$ are greater than or equal to $a$, we replaced the $X$ notation with $a$. This is where the loosening of the bound occurs, but it enables us to derive its proof.
+
+-   We factored the constant $a$ out of the summation operator.
+
+-   We recognized that the summation of terms above a threshold is the same thing as the cumulative probability above the threshold, so we replaced the summation operator with cumulative probability.
+
+-   We solved for $P(X\geq a)$ to be $\frac{E(X)}{a}$.
+
+And that is Markov's Inequality
+
+Let's look at a few more data illustrations
+
+```{r}
+set.seed(432)
+
+con <- tibble(x=round(rnorm(100,50, 10),0))
+e_x <- round(mean(con$x),0)
+sd <- sd(con$x)
+
+head(con) %>%
+    flextable()
+```
+
+```{r}
+describe(con) %>% flextable()
+```
+
+```{r}
+set.seed(32)
+a <- sample(con$x, 1)
+```
+
+Let's say a = `r a`
+
+$$P(x\geq`r a`)\leq\frac{`r e_x`}{`r a`}\leq `r e_x/a`$$ For context, what is the actual probability of observing 52 or more?
+
+```{r}
+mean(con$x>=a)
+```
+
+Under the Markov bound, as many as 94 percent of data values may exceed 51. In the actual data simulated from a normal distribution, 41 percent of the data values exceed 51.
+
+Now let's set values of $a$ at higher and higher quantiles[^2]
+
+[^2]: Values of $a$ at low quantiles are uninteresting because the probability is unity
+
+```{r}
+a <- quantile(con$x,
+              probs=c(.75,.9,.95,.99)) %>%
+    round(0)
+
+```
+
+```{r}
+out <- tibble(
+    quantile = names(a),
+    a=a,
+    ex_a = e_x / a,
+    actual_prob = c(
+        mean(con$x >= a[1]),  # proportion >= 75th percentile
+        mean(con$x >= a[2]),  # proportion >= 90th percentile
+        mean(con$x >= a[3]),  # proportion >= 95th percentile
+        mean(con$x >= a[4])   # proportion >= 99th percentile
+    ))
+out %>%
+    flextable()
+```
+
+The Markov bounds are much higher than the actual probabilities found in the data. There is such a gap that Markov's Inequality isn't helpful in terms of hypothesis testing. It is still used in theoretical work to set bounds and support proofs. It would probably be best to think of it this way: what is the maximum proportion of data points that may exceed a given threshold, before the mean must shift toward the threshold?
+
+Let's see Markov's Inequality across the discrete distribution we've been using for examples. 
+
+```{r}
+#| echo: false
+#| warning: false
+library(plotly)
+library(tidyverse)
+
+# Create interactive plot using plotly
+x_vals <- c(1, 2, 4, 8, 16)
+p_vals <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+EX <- sum(x_vals * p_vals)
+
+# Create data for different threshold values
+thresholds <- seq(1, 16, by = 0.5)
+results <- map_df(thresholds, function(a) {
+  actual_prob <- sum(p_vals[x_vals >= a])
+  markov_bound <- EX / a
+  tibble(
+    threshold = a,
+    actual_prob = actual_prob,
+    markov_bound = markov_bound
+  )
+})
+
+# Bar data for individual probability masses
+bar_data <- tibble(x = x_vals, p = p_vals)
+
+# Create plotly interactive plot
+plot_ly() %>%
+  add_bars(data = bar_data, x = ~x, y = ~p,
+           name = "P(X = x)",
+           marker = list(color = '#0067B9', opacity = 0.5),
+           width = 0.4) %>%
+  add_trace(data = results, x = ~threshold, y = ~markov_bound,
+            name = "Markov Bound (E[X]/a)",
+            type = 'scatter', mode = 'lines',
+            line = list(color = '#BA0C2F', width = 3)) %>%
+  add_trace(data = results, x = ~threshold, y = ~actual_prob,
+            name = "Actual P(X \u2265 a)",
+            type = 'scatter', mode = 'lines',
+            line = list(color = '#0067B9', width = 3)) %>%
+  layout(title = "Markov's Inequality: Interactive Exploration",
+         xaxis = list(title = "Threshold (a)"),
+         yaxis = list(title = "Probability", range = c(0, 1)),
+         hovermode = "x unified",
+         legend = list(x = 0.7, y = 0.95))
+```
+
+Finally, let's explore Markov's Inequality across several distributions:
+
+```{r}
+#| echo: false
+library(shiny)
+library(bslib)
+library(ggplot2)
+
+page_sidebar(
+  sidebar = sidebar(
+    selectInput("dist_type",
+                "Distribution:",
+                choices = c("Discrete (custom)" = "discrete",
+                           "Normal" = "normal",
+                           "Uniform" = "uniform",
+                           "Exponential" = "exponential",
+                           "Poisson" = "poisson",
+                           "Gamma" = "gamma")),
+    sliderInput("a_threshold",
+                "Threshold (a):",
+                min = 0,
+                max = 20,
+                value = 5,
+                step = 0.5),
+    hr(),
+    uiOutput("dist_info")
+  ),
+  card(
+    card_header("Distribution Visualization"),
+    plotOutput("distPlot", height = "400px")
+  ),
+  card(
+    card_header("Markov's Inequality Check"),
+    tableOutput("markovTable")
+  )
+)
+```
+
+```{r}
+#| context: server
+#| message: false
+#| warning: false
+library(shiny)
+library(bslib)
+library(ggplot2)
+
+# Dynamic distribution info panel
+output$dist_info <- renderUI({
+  switch(input$dist_type,
+         "discrete" = div(
+           h5("Custom Discrete"),
+           p("X = {1, 2, 4, 8, 16}"),
+           p("P = {0.4, 0.2, 0.2, 0.1, 0.1}"),
+           p(strong("E[X] = 4"))
+         ),
+         "normal" = div(
+           h5("Normal Distribution"),
+           p("μ = 5, σ = 2"),
+           p(strong("E[X] = 5"))
+         ),
+         "uniform" = div(
+           h5("Uniform Distribution"),
+           p("Range: [0, 10]"),
+           p(strong("E[X] = 5"))
+         ),
+         "exponential" = div(
+           h5("Exponential Distribution"),
+           p("λ = 0.2"),
+           p(strong("E[X] = 5"))
+         ),
+         "poisson" = div(
+           h5("Poisson Distribution"),
+           p("λ = 5"),
+           p(strong("E[X] = 5"))
+         ),
+         "gamma" = div(
+           h5("Gamma Distribution"),
+           p("shape = 2, rate = 0.4"),
+           p(strong("E[X] = 5"))
+         )
+  )
+})
+
+# Distribution parameters
+get_params <- reactive({
+  list(
+    EX = switch(input$dist_type,
+                "discrete" = 4,
+                5),
+    max_x = switch(input$dist_type,
+                   "discrete" = 20,
+                   "poisson" = 20,
+                   "normal" = 15,
+                   "uniform" = 12,
+                   "exponential" = 20,
+                   "gamma" = 20)
+  )
+})
+
+# Actual probability P(X >= a)
+calc_prob <- reactive({
+  a <- input$a_threshold
+  switch(input$dist_type,
+         "discrete" = {
+           x <- c(1, 2, 4, 8, 16)
+           p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+           sum(p[x >= a])
+         },
+         "normal"      = pnorm(a, mean = 5, sd = 2, lower.tail = FALSE),
+         "uniform"     = punif(a, min = 0, max = 10, lower.tail = FALSE),
+         "exponential" = pexp(a, rate = 0.2, lower.tail = FALSE),
+         "poisson"     = ppois(a - 1, lambda = 5, lower.tail = FALSE),
+         "gamma"       = pgamma(a, shape = 2, rate = 0.4, lower.tail = FALSE)
+  )
+})
+
+# Distribution plot
+output$distPlot <- renderPlot({
+  a            <- input$a_threshold
+  params       <- get_params()
+  actual_prob  <- calc_prob()
+  markov_bound <- params$EX / a
+
+  if (input$dist_type == "discrete") {
+    x <- c(1, 2, 4, 8, 16)
+    p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+    plot_data <- data.frame(x = x, p = p,
+                            highlight = ifelse(x >= a, "\u2265 a", "< a"))
+    ggplot(plot_data, aes(x = factor(x), y = p, fill = highlight)) +
+      geom_col(width = 0.4) +
+      scale_fill_manual(values = c("\u2265 a" = "#0067B9", "< a" = "lightgray")) +
+      labs(x = "X", y = "Probability", fill = NULL,
+           title = sprintf("P(X \u2265 %.1f) = %.3f  |  Markov Bound = %.3f",
+                           a, actual_prob, markov_bound)) +
+      theme_minimal(base_size = 14) +
+      theme(legend.position = "bottom")
+
+  } else if (input$dist_type == "poisson") {
+    x_vals <- 0:20
+    probs  <- dpois(x_vals, lambda = 5)
+    plot_data <- data.frame(x = x_vals, p = probs,
+                            highlight = ifelse(x_vals >= a, "\u2265 a", "< a"))
+    ggplot(plot_data, aes(x = factor(x), y = p, fill = highlight)) +
+      geom_col(width = 0.4) +
+      scale_fill_manual(values = c("\u2265 a" = "#0067B9", "< a" = "lightgray")) +
+      labs(x = "X", y = "Probability", fill = NULL,
+           title = sprintf("P(X \u2265 %.1f) = %.3f  |  Markov Bound = %.3f",
+                           a, actual_prob, markov_bound)) +
+      theme_minimal(base_size = 14) +
+      theme(legend.position = "bottom",
+            axis.text.x = element_text(size = 8))
+
+  } else {
+    x_range <- seq(0, params$max_x, length.out = 500)
+    density_data <- data.frame(
+      x = x_range,
+      y = switch(input$dist_type,
+                 "normal"      = dnorm(x_range, mean = 5, sd = 2),
+                 "uniform"     = dunif(x_range, min = 0, max = 10),
+                 "exponential" = dexp(x_range, rate = 0.2),
+                 "gamma"       = dgamma(x_range, shape = 2, rate = 0.4))
+    )
+    ggplot(density_data, aes(x = x, y = y)) +
+      geom_line(linewidth = 1) +
+      geom_area(fill = "lightblue", alpha = 0.3) +
+      geom_vline(xintercept = a, linetype = "dashed",
+                 color = "red", linewidth = 1.2) +
+      geom_area(data = subset(density_data, x >= a),
+                fill = "#0067B9", alpha = 0.5) +
+      annotate("text", x = a, y = max(density_data$y) * 0.9,
+               label = sprintf("a = %.1f\nP(X \u2265 a) = %.3f\nMarkov Bound = %.3f",
+                               a, actual_prob, markov_bound),
+               hjust = -0.1, size = 4.5) +
+      labs(x = "X", y = "Density") +
+      theme_minimal(base_size = 14)
+  }
+})
+
+# Summary table
+output$markovTable <- renderTable({
+  a            <- input$a_threshold
+  params       <- get_params()
+  actual_prob  <- calc_prob()
+  markov_bound <- params$EX / a
+
+  data.frame(
+    Measure = c("Distribution Mean E[X]",
+                "Threshold (a)",
+                "Markov Bound (E[X] / a)",
+                "Actual P(X \u2265 a)",
+                "Inequality holds?"),
+    Value = c(sprintf("%.2f", params$EX),
+              sprintf("%.2f", a),
+              sprintf("%.3f", markov_bound),
+              sprintf("%.3f", actual_prob),
+              ifelse(actual_prob <= markov_bound, "\u2713 Yes", "\u2717 No"))
+  )
+}, bordered = TRUE, spacing = "s", width = "100%")
+```
