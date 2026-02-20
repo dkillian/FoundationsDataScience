@@ -12,7 +12,6 @@ format:
     page-layout: full
 execute: 
   keep-md: true
-server: shiny
 editor: visual
 reference-location: margin
 ---
@@ -234,251 +233,225 @@ out %>%
 
 The Markov bounds are much higher than the actual probabilities found in the data. There is such a gap that Markov's Inequality isn't helpful in terms of hypothesis testing. It is still used in theoretical work to set bounds and support proofs. It would probably be best to think of it this way: what is the maximum proportion of data points that may exceed a given threshold, before the mean must shift toward the threshold?
 
-Let's see Markov's Inequality across the discrete distribution we've been using for examples. 
+Let's conclude by looking at Markov's Inequality across across several distributions:
 
 ```{r}
 #| echo: false
 #| warning: false
+#| message: false
 library(plotly)
 library(tidyverse)
+library(htmltools)
 
-# Create interactive plot using plotly
-x_vals <- c(1, 2, 4, 8, 16)
-p_vals <- c(0.4, 0.2, 0.2, 0.1, 0.1)
-EX <- sum(x_vals * p_vals)
+thresholds_app <- seq(0.5, 20, by = 0.5)
+dists_app      <- c("Discrete", "Normal", "Uniform", "Exponential", "Poisson", "Gamma")
+EX_app         <- c(Discrete = 4, Normal = 5, Uniform = 5,
+                    Exponential = 5, Poisson = 5, Gamma = 5)
 
-# Create data for different threshold values
-thresholds <- seq(1, 16, by = 0.5)
-results <- map_df(thresholds, function(a) {
-  actual_prob <- sum(p_vals[x_vals >= a])
-  markov_bound <- EX / a
-  tibble(
-    threshold = a,
-    actual_prob = actual_prob,
-    markov_bound = markov_bound
+calc_prob_app <- function(dist, a) {
+  switch(dist,
+    Discrete    = { xd <- c(1,2,4,8,16); pd <- c(0.4,0.2,0.2,0.1,0.1); sum(pd[xd >= a]) },
+    Normal      = pnorm(a, 5, 2, lower.tail = FALSE),
+    Uniform     = punif(a, 0, 10, lower.tail = FALSE),
+    Exponential = pexp(a, 0.2, lower.tail = FALSE),
+    Poisson     = ppois(a - 1, 5, lower.tail = FALSE),
+    Gamma       = pgamma(a, 2, 0.4, lower.tail = FALSE)
+  )
+}
+
+curve_data_app <- expand_grid(dist = dists_app, threshold = thresholds_app) |>
+  mutate(
+    actual = map2_dbl(dist, threshold, calc_prob_app),
+    markov = pmin(EX_app[dist] / threshold, 1)
+  )
+
+disc_x_app <- c(1, 2, 4, 8, 16)
+disc_p_app <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+pois_x_app <- 0:20
+pois_p_app <- dpois(0:20, 5)
+x_cont_app <- seq(0.01, 20, length.out = 300)
+
+make_markov_plot <- function(dist) {
+  d_curve  <- curve_data_app |> filter(dist == !!dist)
+  init_a   <- 5
+  init_row <- d_curve |> filter(threshold == init_a)
+
+  steps <- lapply(thresholds_app, function(a) {
+    list(
+      method = "animate",
+      args   = list(list(as.character(a)),
+                    list(mode = "immediate",
+                         transition = list(duration = 0),
+                         frame      = list(duration = 0, redraw = FALSE))),
+      label  = as.character(a)
+    )
+  })
+
+  if (dist == "Discrete") {
+    frames <- lapply(thresholds_app, function(a) {
+      row      <- d_curve |> filter(threshold == a)
+      bar_cols <- as.list(ifelse(disc_x_app >= a, "#0067B9", "lightgray"))
+      list(name   = as.character(a),
+           data   = list(list(marker = list(color = bar_cols)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L))
+    })
+    init_col <- as.list(ifelse(disc_x_app >= init_a, "#0067B9", "lightgray"))
+    p <- plot_ly() |>
+      add_bars(x = disc_x_app, y = disc_p_app,
+               marker = list(color = init_col),
+               name = "P(X = x)", showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+
+  } else if (dist == "Poisson") {
+    frames <- lapply(thresholds_app, function(a) {
+      row      <- d_curve |> filter(threshold == a)
+      bar_cols <- as.list(ifelse(pois_x_app >= a, "#0067B9", "lightgray"))
+      list(name   = as.character(a),
+           data   = list(list(marker = list(color = bar_cols)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L))
+    })
+    init_col <- as.list(ifelse(pois_x_app >= init_a, "#0067B9", "lightgray"))
+    p <- plot_ly() |>
+      add_bars(x = pois_x_app, y = pois_p_app,
+               marker = list(color = init_col),
+               name = "P(X = x)", showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+
+  } else {
+    dens_y <- switch(dist,
+      Normal      = dnorm(x_cont_app, 5, 2),
+      Uniform     = dunif(x_cont_app, 0, 10),
+      Exponential = dexp(x_cont_app, 0.2),
+      Gamma       = dgamma(x_cont_app, 2, 0.4)
+    )
+    max_y  <- max(dens_y)
+    frames <- lapply(thresholds_app, function(a) {
+      row   <- d_curve |> filter(threshold == a)
+      below <- ifelse(x_cont_app <  a, dens_y / max_y * 0.4, NA)
+      above <- ifelse(x_cont_app >= a, dens_y / max_y * 0.4, NA)
+      list(name   = as.character(a),
+           data   = list(list(y = as.list(below)),
+                         list(y = as.list(above)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L, 3L))
+    })
+    below_init <- ifelse(x_cont_app <  init_a, dens_y / max_y * 0.4, NA)
+    above_init <- ifelse(x_cont_app >= init_a, dens_y / max_y * 0.4, NA)
+    p <- plot_ly() |>
+      add_trace(type = "scatter", mode = "lines", x = x_cont_app, y = below_init,
+                fill = "tozeroy", fillcolor = "rgba(200,200,200,0.4)",
+                line = list(color = "lightgray", width = 1),
+                showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "lines", x = x_cont_app, y = above_init,
+                fill = "tozeroy", fillcolor = "rgba(0,103,185,0.4)",
+                line = list(color = "#0067B9", width = 1),
+                showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+  }
+
+  p <- p |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$threshold, y = d_curve$markov,
+              name = "Markov Bound E[X]/a",
+              line = list(color = "#BA0C2F", width = 2.5)) |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$threshold, y = d_curve$actual,
+              name = "Actual P(X \u2265 a)",
+              line = list(color = "#0067B9", width = 2.5)) |>
+    layout(
+      title     = paste("Markov's Inequality \u2013", dist),
+      xaxis     = list(title = "x  /  Threshold (a)", range = c(0, 20)),
+      yaxis     = list(title = "Probability", range = c(0, 1.05)),
+      hovermode = "closest",
+      sliders   = list(list(
+        active       = which(thresholds_app == 5) - 1,
+        currentvalue = list(prefix = "a = ", font = list(size = 13)),
+        pad          = list(t = 50),
+        steps        = steps
+      ))
+    )
+
+  p$x$frames <- frames
+  p
+}
+
+# Build all six plots and wrap in tabs
+plots_app <- setNames(lapply(dists_app, make_markov_plot), dists_app)
+
+tab_buttons_app <- lapply(seq_along(dists_app), function(i) {
+  d <- dists_app[i]
+  tags$button(
+    d,
+    onclick = sprintf(
+      "document.querySelectorAll('.mktab').forEach(el => el.style.display='none');
+       document.querySelectorAll('.mkbtn').forEach(el => el.classList.remove('mkactive'));
+       document.getElementById('mktab-%s').style.display='block';
+       this.classList.add('mkactive');", d),
+    class = if (i == 1) "mkbtn mkactive" else "mkbtn",
+    style = "margin:4px; padding:8px 16px; cursor:pointer; border:1px solid #ccc;
+             border-radius:4px; background:#f5f5f5; font-size:14px;"
   )
 })
 
-# Bar data for individual probability masses
-bar_data <- tibble(x = x_vals, p = p_vals)
+tab_panels_app <- lapply(seq_along(dists_app), function(i) {
+  d <- dists_app[i]
+  tags$div(id = paste0("mktab-", d), class = "mktab",
+           style = if (i == 1) "display:block;" else "display:none;",
+           as.widget(plots_app[[d]]))
+})
 
-# Create plotly interactive plot
-plot_ly() %>%
-  add_bars(data = bar_data, x = ~x, y = ~p,
-           name = "P(X = x)",
-           marker = list(color = '#0067B9', opacity = 0.5),
-           width = 0.4) %>%
-  add_trace(data = results, x = ~threshold, y = ~markov_bound,
-            name = "Markov Bound (E[X]/a)",
-            type = 'scatter', mode = 'lines',
-            line = list(color = '#BA0C2F', width = 3)) %>%
-  add_trace(data = results, x = ~threshold, y = ~actual_prob,
-            name = "Actual P(X \u2265 a)",
-            type = 'scatter', mode = 'lines',
-            line = list(color = '#0067B9', width = 3)) %>%
-  layout(title = "Markov's Inequality: Interactive Exploration",
-         xaxis = list(title = "Threshold (a)"),
-         yaxis = list(title = "Probability", range = c(0, 1)),
-         hovermode = "x unified",
-         legend = list(x = 0.7, y = 0.95))
-```
-
-Finally, let's explore Markov's Inequality across several distributions:
-
-```{r}
-#| echo: false
-library(shiny)
-library(bslib)
-library(ggplot2)
-
-page_sidebar(
-  sidebar = sidebar(
-    selectInput("dist_type",
-                "Distribution:",
-                choices = c("Discrete (custom)" = "discrete",
-                           "Normal" = "normal",
-                           "Uniform" = "uniform",
-                           "Exponential" = "exponential",
-                           "Poisson" = "poisson",
-                           "Gamma" = "gamma")),
-    sliderInput("a_threshold",
-                "Threshold (a):",
-                min = 0,
-                max = 20,
-                value = 5,
-                step = 0.5),
-    hr(),
-    uiOutput("dist_info")
-  ),
-  card(
-    card_header("Distribution Visualization"),
-    plotOutput("distPlot", height = "400px")
-  ),
-  card(
-    card_header("Markov's Inequality Check"),
-    tableOutput("markovTable")
-  )
+tagList(
+  tags$style(".mkactive { background:#0067B9 !important; color:white !important;
+                           border-color:#0067B9 !important; }
+              .mkbtn:hover { background:#e0e0e0; }"),
+  tags$div(style = "margin-bottom:8px;", tagList(tab_buttons_app)),
+  tagList(tab_panels_app)
 )
 ```
 
-```{r}
-#| context: server
-#| message: false
-#| warning: false
-library(shiny)
-library(bslib)
-library(ggplot2)
+## Chebushev's Inequality
 
-# Dynamic distribution info panel
-output$dist_info <- renderUI({
-  switch(input$dist_type,
-         "discrete" = div(
-           h5("Custom Discrete"),
-           p("X = {1, 2, 4, 8, 16}"),
-           p("P = {0.4, 0.2, 0.2, 0.1, 0.1}"),
-           p(strong("E[X] = 4"))
-         ),
-         "normal" = div(
-           h5("Normal Distribution"),
-           p("μ = 5, σ = 2"),
-           p(strong("E[X] = 5"))
-         ),
-         "uniform" = div(
-           h5("Uniform Distribution"),
-           p("Range: [0, 10]"),
-           p(strong("E[X] = 5"))
-         ),
-         "exponential" = div(
-           h5("Exponential Distribution"),
-           p("λ = 0.2"),
-           p(strong("E[X] = 5"))
-         ),
-         "poisson" = div(
-           h5("Poisson Distribution"),
-           p("λ = 5"),
-           p(strong("E[X] = 5"))
-         ),
-         "gamma" = div(
-           h5("Gamma Distribution"),
-           p("shape = 2, rate = 0.4"),
-           p(strong("E[X] = 5"))
-         )
-  )
-})
-
-# Distribution parameters
-get_params <- reactive({
-  list(
-    EX = switch(input$dist_type,
-                "discrete" = 4,
-                5),
-    max_x = switch(input$dist_type,
-                   "discrete" = 20,
-                   "poisson" = 20,
-                   "normal" = 15,
-                   "uniform" = 12,
-                   "exponential" = 20,
-                   "gamma" = 20)
-  )
-})
-
-# Actual probability P(X >= a)
-calc_prob <- reactive({
-  a <- input$a_threshold
-  switch(input$dist_type,
-         "discrete" = {
-           x <- c(1, 2, 4, 8, 16)
-           p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
-           sum(p[x >= a])
-         },
-         "normal"      = pnorm(a, mean = 5, sd = 2, lower.tail = FALSE),
-         "uniform"     = punif(a, min = 0, max = 10, lower.tail = FALSE),
-         "exponential" = pexp(a, rate = 0.2, lower.tail = FALSE),
-         "poisson"     = ppois(a - 1, lambda = 5, lower.tail = FALSE),
-         "gamma"       = pgamma(a, shape = 2, rate = 0.4, lower.tail = FALSE)
-  )
-})
-
-# Distribution plot
-output$distPlot <- renderPlot({
-  a            <- input$a_threshold
-  params       <- get_params()
-  actual_prob  <- calc_prob()
-  markov_bound <- params$EX / a
-
-  if (input$dist_type == "discrete") {
-    x <- c(1, 2, 4, 8, 16)
-    p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
-    plot_data <- data.frame(x = x, p = p,
-                            highlight = ifelse(x >= a, "\u2265 a", "< a"))
-    ggplot(plot_data, aes(x = factor(x), y = p, fill = highlight)) +
-      geom_col(width = 0.4) +
-      scale_fill_manual(values = c("\u2265 a" = "#0067B9", "< a" = "lightgray")) +
-      labs(x = "X", y = "Probability", fill = NULL,
-           title = sprintf("P(X \u2265 %.1f) = %.3f  |  Markov Bound = %.3f",
-                           a, actual_prob, markov_bound)) +
-      theme_minimal(base_size = 14) +
-      theme(legend.position = "bottom")
-
-  } else if (input$dist_type == "poisson") {
-    x_vals <- 0:20
-    probs  <- dpois(x_vals, lambda = 5)
-    plot_data <- data.frame(x = x_vals, p = probs,
-                            highlight = ifelse(x_vals >= a, "\u2265 a", "< a"))
-    ggplot(plot_data, aes(x = factor(x), y = p, fill = highlight)) +
-      geom_col(width = 0.4) +
-      scale_fill_manual(values = c("\u2265 a" = "#0067B9", "< a" = "lightgray")) +
-      labs(x = "X", y = "Probability", fill = NULL,
-           title = sprintf("P(X \u2265 %.1f) = %.3f  |  Markov Bound = %.3f",
-                           a, actual_prob, markov_bound)) +
-      theme_minimal(base_size = 14) +
-      theme(legend.position = "bottom",
-            axis.text.x = element_text(size = 8))
-
-  } else {
-    x_range <- seq(0, params$max_x, length.out = 500)
-    density_data <- data.frame(
-      x = x_range,
-      y = switch(input$dist_type,
-                 "normal"      = dnorm(x_range, mean = 5, sd = 2),
-                 "uniform"     = dunif(x_range, min = 0, max = 10),
-                 "exponential" = dexp(x_range, rate = 0.2),
-                 "gamma"       = dgamma(x_range, shape = 2, rate = 0.4))
-    )
-    ggplot(density_data, aes(x = x, y = y)) +
-      geom_line(linewidth = 1) +
-      geom_area(fill = "lightblue", alpha = 0.3) +
-      geom_vline(xintercept = a, linetype = "dashed",
-                 color = "red", linewidth = 1.2) +
-      geom_area(data = subset(density_data, x >= a),
-                fill = "#0067B9", alpha = 0.5) +
-      annotate("text", x = a, y = max(density_data$y) * 0.9,
-               label = sprintf("a = %.1f\nP(X \u2265 a) = %.3f\nMarkov Bound = %.3f",
-                               a, actual_prob, markov_bound),
-               hjust = -0.1, size = 4.5) +
-      labs(x = "X", y = "Density") +
-      theme_minimal(base_size = 14)
-  }
-})
-
-# Summary table
-output$markovTable <- renderTable({
-  a            <- input$a_threshold
-  params       <- get_params()
-  actual_prob  <- calc_prob()
-  markov_bound <- params$EX / a
-
-  data.frame(
-    Measure = c("Distribution Mean E[X]",
-                "Threshold (a)",
-                "Markov Bound (E[X] / a)",
-                "Actual P(X \u2265 a)",
-                "Inequality holds?"),
-    Value = c(sprintf("%.2f", params$EX),
-              sprintf("%.2f", a),
-              sprintf("%.3f", markov_bound),
-              sprintf("%.3f", actual_prob),
-              ifelse(actual_prob <= markov_bound, "\u2713 Yes", "\u2717 No"))
-  )
-}, bordered = TRUE, spacing = "s", width = "100%")
-```
