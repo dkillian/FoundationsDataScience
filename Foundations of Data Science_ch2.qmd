@@ -1,6 +1,6 @@
 ---
-title: "Foundations of Data Science"
-subtitle: "Chapter notes for textbook by Blum et al 2020"
+title: "Foundations of Data Science (Blum et al 2020)"
+subtitle: "Chapter 2 notes"
 author: "Dan Killian"
 date: 2-1-2026
 toc: true
@@ -451,5 +451,874 @@ tagList(
 )
 ```
 
-## 2.2 Chebushev's Inequality
+## 2.2 Chebyshev's Inequality
+
+### 2.2.1 Application
+
+Chebyshev's Inequality is a direct application of Markov's Inequality.
+
+Where Markov's Inequality only requires knowing the mean of a distribution, Chebyshev's Inequality uses the variance as well, and in doing so produces a tighter bound.
+
+Chebyshev's Inequality states the following: 
+
+$$P(|X - \mu| \geq c) \leq \frac{Var(X)}{c^2}$$
+
+The probability that any value of $X$ deviates from the mean $\mu$ by more than $c$ standard deviations cannot exceed $\frac{Var(X)}{c^2}$.
+
+In order to derive Chebyshev's Inequality, let's start with Markov's Inequality.
+
+$P(X \geq a) \leq \frac{E(X)}{a}$
+
+$|X-\mu|$ satisfies the Markov conditions that X is non-negative, so we can use it for X:
+
+$P\big(|X - \mu| \geq c\big) \leq \frac{E\big[|X-\mu|\big]}{c}$
+
+Note further that if we square X, it still satisfies the Markov conditions, but also starts to look like a variance. 
+
+$P\Big((X - \mu)^2 \geq c^2\Big) \leq \frac{E\big[(X-\mu)^2\big]}{c^2}$
+
+Now note that $E\big[(X-\mu)^2\big]$ is the definition of variance. So we replace the numerator of the second term with $Var(X)$ and we return the first term to its absolute value: 
+
+$P\big(|X - \mu| \geq c\big) \leq \frac{Var(X)}{c^2}$
+
+And that's it. A straightforward application of Markov's Inequality gives us Chebyshev's Inequality, which gives us bounds on the variance of X. 
+
+There are two important features to note compared to Markov's Inequality. First, Chebyshev's bound is expressed in terms of *deviations from the mean* in either direction — it covers both tails of the distribution. Second, it requires no assumptions about the sign of $X$; it only requires that the variance $\sigma^2$ be finite.
+
+Let's look at an example that shows the inequality, even if it's not a realistic distribution.
+
+The distribution that achieves the Chebyshev bound *exactly* is the **two-point distribution**: place probability mass $\frac{1}{2k^2}$ at each of $\mu - k\sigma$ and $\mu + k\sigma$, and the remainder at $\mu$.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(tidyverse)
+library(ggplot2)
+
+k <- 2; mu <- 0; sig <- 1
+
+dist_df <- tibble(
+  x     = c(mu - k*sig, mu, mu + k*sig),
+  p     = c(1/(2*k^2), 1 - 1/k^2, 1/(2*k^2)),
+  color = c("tail", "center", "tail")
+)
+
+ggplot(dist_df, aes(x = factor(x), y = p, fill = color)) +
+  geom_col(width = 0.5, color = "white") +
+  geom_hline(yintercept = 1/k^2, linetype = "dashed",
+             color = "#BA0C2F", linewidth = 0.8) +
+  annotate("text", x = 2.6, y = 1/k^2 + 0.025,
+           label = sprintf("Chebyshev bound = 1/k\u00b2 = %.2f", 1/k^2),
+           color = "#BA0C2F", hjust = 1, size = 3.5) +
+  annotate("text", x = 2.6, y = 0.075,
+           label = sprintf("P(tail) + P(tail) = %.3f + %.3f = %.2f  \u2713",
+                           1/(2*k^2), 1/(2*k^2), 1/k^2),
+           color = "#0067B9", hjust = 1, size = 3.5) +
+  scale_fill_manual(values = c(center = "lightgray", tail = "#0067B9"),
+                    labels = c(center = "Center mass (at \u03bc)",
+                               tail   = "Tail mass (at \u03bc \u00b1 k\u03c3)")) +
+  scale_x_discrete(labels = c("-2" = "\u03bc \u2212 k\u03c3 = \u22122",
+                               "0"  = "\u03bc = 0",
+                               "2"  = "\u03bc + k\u03c3 = 2")) +
+  labs(title = "Two-Point Distribution: Chebyshev Bound Achieved Exactly (k = 2)",
+       x = NULL, y = "Probability", fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+The total tail probability — the two blue bars — equals exactly $\frac{1}{k^2} = 0.25$, touching the Chebyshev bound. This is the worst-case distribution for Chebyshev: any other distribution with the same mean and variance will have *less* tail probability beyond $k\sigma$. Chebyshev's bound cannot be improved in general because this distribution exists.
+
+Let's now see how the bound performs across several realistic distributions. All are standardized to $\mu = 0$, $\sigma = 1$ for direct comparison.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(plotly)
+library(tidyverse)
+library(htmltools)
+
+k_seq_cb  <- seq(0.5, 5, by = 0.5)
+dists_cb  <- c("Normal", "Uniform", "t(5)", "Laplace", "Exponential")
+x_cb      <- seq(-5.5, 5.5, length.out = 400)
+
+calc_cb_prob <- function(dist, k) {
+  switch(dist,
+    "Normal"      = 2 * pnorm(-k),
+    "Uniform"     = max(0, 1 - k / sqrt(3)),
+    "t(5)"        = 2 * pt(-k * sqrt(5/3), df = 5),
+    "Laplace"     = exp(-k * sqrt(2)),
+    "Exponential" = pexp(1 + k, rate = 1, lower.tail = FALSE) +
+                    pexp(max(0, 1 - k), rate = 1)
+  )
+}
+
+get_dens_cb <- function(dist, x) {
+  switch(dist,
+    "Normal"      = dnorm(x),
+    "Uniform"     = dunif(x, -sqrt(3), sqrt(3)),
+    "t(5)"        = dt(x * sqrt(5/3), df = 5) * sqrt(5/3),
+    "Laplace"     = (sqrt(2)/2) * exp(-abs(x) * sqrt(2)),
+    "Exponential" = ifelse(x >= -1, dexp(x + 1, rate = 1), 0)
+  )
+}
+
+curve_data_cb <- expand_grid(dist = dists_cb, k = k_seq_cb) |>
+  mutate(
+    actual = map2_dbl(dist, k, calc_cb_prob),
+    bound  = pmin(1 / k^2, 1)
+  )
+
+make_cheb_plot <- function(dist) {
+  d_curve  <- curve_data_cb |> filter(dist == !!dist)
+  init_k   <- 2
+  init_row <- d_curve |> filter(k == init_k)
+
+  steps <- lapply(k_seq_cb, function(kk) {
+    list(
+      method = "animate",
+      args   = list(list(as.character(kk)),
+                    list(mode = "immediate",
+                         transition = list(duration = 0),
+                         frame      = list(duration = 0, redraw = FALSE))),
+      label  = as.character(kk)
+    )
+  })
+
+  dens_y <- get_dens_cb(dist, x_cb)
+  max_y  <- max(dens_y, na.rm = TRUE)
+
+  frames <- lapply(k_seq_cb, function(kk) {
+    row      <- d_curve |> filter(k == kk)
+    y_left   <- ifelse(x_cb < -kk,         dens_y / max_y * 0.4, NA)
+    y_center <- ifelse(abs(x_cb) <= kk,    dens_y / max_y * 0.4, NA)
+    y_right  <- ifelse(x_cb > kk,          dens_y / max_y * 0.4, NA)
+    list(
+      name   = as.character(kk),
+      data   = list(
+        list(y = as.list(y_left)),
+        list(y = as.list(y_center)),
+        list(y = as.list(y_right)),
+        list(x = list(kk), y = list(row$bound),
+             text = list(sprintf("Chebyshev Bound: %.3f", row$bound))),
+        list(x = list(kk), y = list(row$actual),
+             text = list(sprintf("Actual P(|X-\u03bc|\u2265k\u03c3): %.4f | Bound: %.4f | Holds: %s",
+                                 row$actual, row$bound,
+                                 ifelse(row$actual <= row$bound, "Yes", "No"))))
+      ),
+      traces = list(0L, 1L, 2L, 3L, 4L)
+    )
+  })
+
+  init_left   <- ifelse(x_cb < -init_k,      dens_y / max_y * 0.4, NA)
+  init_center <- ifelse(abs(x_cb) <= init_k, dens_y / max_y * 0.4, NA)
+  init_right  <- ifelse(x_cb > init_k,       dens_y / max_y * 0.4, NA)
+
+  p <- plot_ly() |>
+    add_trace(type = "scatter", mode = "lines", x = x_cb, y = init_left,
+              fill = "tozeroy", fillcolor = "rgba(0,103,185,0.4)",
+              line = list(color = "#0067B9", width = 1),
+              showlegend = FALSE) |>
+    add_trace(type = "scatter", mode = "lines", x = x_cb, y = init_center,
+              fill = "tozeroy", fillcolor = "rgba(200,200,200,0.4)",
+              line = list(color = "lightgray", width = 1),
+              showlegend = FALSE) |>
+    add_trace(type = "scatter", mode = "lines", x = x_cb, y = init_right,
+              fill = "tozeroy", fillcolor = "rgba(0,103,185,0.4)",
+              line = list(color = "#0067B9", width = 1),
+              showlegend = FALSE) |>
+    add_trace(type = "scatter", mode = "markers",
+              x = list(init_k), y = list(init_row$bound),
+              marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+              showlegend = FALSE,
+              text = sprintf("Chebyshev Bound: %.3f", init_row$bound),
+              hoverinfo = "text") |>
+    add_trace(type = "scatter", mode = "markers",
+              x = list(init_k), y = list(init_row$actual),
+              marker = list(color = "#0067B9", size = 12),
+              showlegend = FALSE,
+              text = sprintf("Actual: %.4f", init_row$actual),
+              hoverinfo = "text") |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$k, y = d_curve$bound,
+              name = "Chebyshev Bound 1/k\u00b2",
+              line = list(color = "#BA0C2F", width = 2.5)) |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$k, y = d_curve$actual,
+              name = "Actual P(|X-\u03bc| \u2265 k\u03c3)",
+              line = list(color = "#0067B9", width = 2.5)) |>
+    layout(
+      title     = paste("Chebyshev's Inequality \u2013", dist),
+      xaxis     = list(title = "k\u03c3  /  Threshold (c)", range = c(-5.5, 5.5)),
+      yaxis     = list(title = "Probability", range = c(0, 1.05)),
+      hovermode = "closest",
+      sliders   = list(list(
+        active       = which(k_seq_cb == init_k) - 1,
+        currentvalue = list(prefix = "k = ", font = list(size = 13)),
+        pad          = list(t = 50),
+        steps        = steps
+      ))
+    )
+
+  p$x$frames <- frames
+  p
+}
+
+plots_cb <- setNames(lapply(dists_cb, make_cheb_plot), dists_cb)
+
+tab_buttons_cb <- lapply(seq_along(dists_cb), function(i) {
+  d <- dists_cb[i]
+  tags$button(
+    d,
+    onclick = sprintf(
+      "document.querySelectorAll('.cbtab').forEach(el => el.style.display='none');
+       document.querySelectorAll('.cbbtn').forEach(el => el.classList.remove('cbactive'));
+       document.getElementById('cbtab-%s').style.display='block';
+       this.classList.add('cbactive');", d),
+    class = if (i == 1) "cbbtn cbactive" else "cbbtn",
+    style = "margin:4px; padding:8px 16px; cursor:pointer; border:1px solid #ccc;
+             border-radius:4px; background:#f5f5f5; font-size:14px;"
+  )
+})
+
+tab_panels_cb <- lapply(seq_along(dists_cb), function(i) {
+  d <- dists_cb[i]
+  tags$div(id = paste0("cbtab-", d), class = "cbtab",
+           style = if (i == 1) "display:block;" else "display:none;",
+           as.widget(plots_cb[[d]]))
+})
+
+tagList(
+  tags$style(".cbactive { background:#0067B9 !important; color:white !important;
+                           border-color:#0067B9 !important; }
+              .cbbtn:hover { background:#e0e0e0; }"),
+  tags$div(style = "margin-bottom:8px;", tagList(tab_buttons_cb)),
+  tagList(tab_panels_cb)
+)
+```
+
+## 2.3 Law of Large Numbers
+
+### 2.3.1 Statement
+
+Now that we have Markov's and Chebyshev's inequalities, we can derive the Law of Large Numbers (LLN). It is one of the most fundamental results in probability and statistics, and it follows almost directly from Chebyshev.
+
+Let $X_1, X_2, \ldots, X_n$ be independent, identically distributed (i.i.d.) random variables with mean $\mu$ and finite variance $\sigma^2$. Define the sample mean:
+
+$$\bar{X}_n = \frac{1}{n} \sum_{i=1}^n X_i$$
+
+The **Weak Law of Large Numbers** states that for any $\epsilon > 0$:
+
+$$\lim_{n \to \infty} P\big(|\bar{X}_n - \mu| \geq \epsilon\big) = 0$$
+
+As we collect more observations, the probability that the sample mean deviates from the true mean by any fixed amount $\epsilon$ goes to zero. We say $\bar{X}_n$ *converges in probability* to $\mu$, written $\bar{X}_n \xrightarrow{p} \mu$.
+
+### 2.3.2 Derivation
+
+The derivation requires two preliminary results, then a direct application of Chebyshev's Inequality.
+
+**Step 1: The expected value of $\bar{X}_n$ is $\mu$.**
+
+By linearity of expectation:
+
+$$E[\bar{X}_n] = E\left[\frac{1}{n}\sum_{i=1}^n X_i\right] = \frac{1}{n}\sum_{i=1}^n E[X_i] = \frac{1}{n} \cdot n\mu = \mu$$
+
+**Step 2: The variance of $\bar{X}_n$ is $\sigma^2 / n$.**
+
+Because the $X_i$ are independent, their variances add:
+
+$$\text{Var}(\bar{X}_n) = \text{Var}\left(\frac{1}{n}\sum_{i=1}^n X_i\right) = \frac{1}{n^2}\sum_{i=1}^n \text{Var}(X_i) = \frac{1}{n^2} \cdot n\sigma^2 = \frac{\sigma^2}{n}$$
+
+This is the key quantity: as $n$ grows, the variance of the sample mean shrinks proportionally.
+
+**Step 3: Apply Chebyshev's Inequality to $\bar{X}_n$.**
+
+From Step 1, $E[\bar{X}_n] = \mu$. From Step 2, $\text{Var}(\bar{X}_n) = \sigma^2/n$. Chebyshev gives:
+
+$$P\big(|\bar{X}_n - \mu| \geq \epsilon\big) \leq \frac{\text{Var}(\bar{X}_n)}{\epsilon^2} = \frac{\sigma^2}{n\epsilon^2}$$
+
+**Step 4: Take the limit.**
+
+For any fixed $\epsilon > 0$ and $\sigma^2 < \infty$:
+
+$$\lim_{n \to \infty} P\big(|\bar{X}_n - \mu| \geq \epsilon\big) \leq \lim_{n \to \infty} \frac{\sigma^2}{n\epsilon^2} = 0$$
+
+Since probabilities are non-negative, this forces $P(|\bar{X}_n - \mu| \geq \epsilon) \to 0$. $\square$
+
+Recap:
+
+- The variance of the sample mean is $\sigma^2/n$ — it shrinks as observations accumulate. This is the engine of the result.
+
+- Chebyshev converts that shrinking variance into a shrinking probability bound. Without Chebyshev (or a similar inequality), we could not bridge from "variance → 0" to "probability of deviation → 0."
+
+- The result holds for *any* distribution with finite mean and variance, regardless of shape. Normality is not required. The only assumption is $\sigma^2 < \infty$.
+
+- Markov's Inequality is the deeper foundation: Chebyshev was derived from Markov, so the LLN ultimately rests on Markov.
+
+### 2.3.3 Simulation
+
+Let's simulate the LLN across three distributions with very different shapes: a Normal, a skewed Exponential, and a discrete Bernoulli. This demonstrates that convergence holds regardless of the underlying distribution.
+
+```{r}
+set.seed(4817)
+
+n_obs  <- 1000  # maximum sample size
+n_reps <- 50    # independent replications per distribution
+
+# Each distribution with its natural mu and sigma
+dist_params <- list(
+  "Normal"      = list(mu = 5,   sigma = 2,               gen = function(n) rnorm(n, 5, 2)),
+  "Exponential" = list(mu = 2,   sigma = 2,               gen = function(n) rexp(n, rate = 0.5)),
+  "Bernoulli"   = list(mu = 0.3, sigma = sqrt(0.3 * 0.7), gen = function(n) rbinom(n, 1, 0.3))
+)
+
+# Simulate running (cumulative) means for all distributions
+sim_data <- map_dfr(names(dist_params), function(d) {
+  params  <- dist_params[[d]]
+  X       <- matrix(params$gen(n_obs * n_reps), nrow = n_reps)
+  running <- t(apply(X, 1, function(x) cumsum(x) / seq_along(x)))
+  tibble(
+    dist = d,
+    rep  = rep(1:n_reps, each = n_obs),
+    n    = rep(1:n_obs,  times = n_reps),
+    xbar = as.vector(t(running))
+  )
+})
+
+# Chebyshev ±2σ/√n envelope: P(|X̄ − μ| ≥ 2σ/√n) ≤ 1/4
+band_data <- map_dfr(names(dist_params), function(d) {
+  params <- dist_params[[d]]
+  tibble(
+    dist = d,
+    n    = 1:n_obs,
+    lo   = params$mu - 2 * params$sigma / sqrt(1:n_obs),
+    hi   = params$mu + 2 * params$sigma / sqrt(1:n_obs)
+  )
+})
+```
+
+**Plot 1: Running means converging to $\mu$**
+
+Each blue line is one simulated replication of $\bar{X}_n$ as $n$ grows. The red band is the Chebyshev $\pm 2\sigma/\sqrt{n}$ envelope, within which at least 75% of paths must fall at every $n$.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+n_plot <- c(1:100, seq(105, 1000, by = 5))
+
+sim_plot  <- sim_data  |> filter(n %in% n_plot)
+band_plot <- band_data |> filter(n %in% n_plot)
+
+mu_lines <- tibble(
+  dist = names(dist_params),
+  mu   = sapply(dist_params, `[[`, "mu")
+)
+
+dist_labels <- c(
+  "Normal"      = "Normal(\u03bc = 5, \u03c3 = 2)",
+  "Exponential" = "Exponential(rate = 0.5,  \u03bc = 2)",
+  "Bernoulli"   = "Bernoulli(p = 0.3,  \u03bc = 0.3)"
+)
+
+ggplot() +
+  geom_ribbon(data = band_plot,
+              aes(x = n, ymin = lo, ymax = hi),
+              fill = "#BA0C2F", alpha = 0.10) +
+  geom_line(data = sim_plot,
+            aes(x = n, y = xbar, group = rep),
+            color = "#0067B9", alpha = 0.20, linewidth = 0.3) +
+  geom_hline(data = mu_lines, aes(yintercept = mu),
+             linetype = "dashed", color = "#BA0C2F", linewidth = 0.8) +
+  scale_x_log10(breaks = c(1, 10, 100, 1000),
+                labels = c("1", "10", "100", "1,000")) +
+  facet_wrap(~dist, scales = "free_y",
+             labeller = labeller(dist = dist_labels)) +
+  labs(
+    title    = "Law of Large Numbers: Convergence of the Sample Mean",
+    subtitle = "50 simulated paths  |  Red dashed line = true \u03bc  |  Red band = Chebyshev \u00b12\u03c3/\u221an  (75% envelope)",
+    x        = "Sample size n (log scale)",
+    y        = "Sample mean"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(panel.spacing = unit(1.5, "lines"))
+```
+
+**Plot 2: Chebyshev bound vs empirical violation rate**
+
+A direct check of the inequality from Step 3 of the derivation. At each $n$, we measure what fraction of the 50 paths fall outside $\epsilon = 0.5\sigma$ of $\mu$ (blue), and compare to the theoretical bound $\frac{\sigma^2}{n\epsilon^2}$ (red dashed). The bound holds everywhere, and both go to zero.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+violation_data <- map_dfr(names(dist_params), function(d) {
+  params <- dist_params[[d]]
+  eps    <- 0.5 * params$sigma
+  sim_data |>
+    filter(dist == d) |>
+    group_by(n) |>
+    summarise(
+      empirical = mean(abs(xbar - params$mu) >= eps),
+      bound     = min(1, params$sigma^2 / (n[1] * eps^2)),
+      .groups   = "drop"
+    ) |>
+    mutate(dist = d)
+})
+
+viol_labels <- c(
+  "Normal"      = "Normal  [\u03b5 = 1.0]",
+  "Exponential" = "Exponential  [\u03b5 = 1.0]",
+  "Bernoulli"   = "Bernoulli  [\u03b5 \u2248 0.23]"
+)
+
+ggplot(violation_data |> filter(n >= 2)) +
+  geom_line(aes(x = n, y = bound),
+            color = "#BA0C2F", linewidth = 0.9, linetype = "dashed") +
+  geom_line(aes(x = n, y = empirical),
+            color = "#0067B9", linewidth = 0.7, alpha = 0.9) +
+  scale_x_log10(breaks = c(1, 10, 100, 1000),
+                labels = c("1", "10", "100", "1,000")) +
+  scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+  facet_wrap(~dist, labeller = labeller(dist = viol_labels)) +
+  labs(
+    title    = "Chebyshev Bound vs Empirical Violation Rate",
+    subtitle = "Blue = empirical P(|\u1d8b\u2099 \u2212 \u03bc| \u2265 \u03b5)  |  Red dashed = Chebyshev bound \u03c3\u00b2/(n\u03b5\u00b2)",
+    x        = "Sample size n (log scale)",
+    y        = "Probability of deviation"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(panel.spacing = unit(1.5, "lines"))
+```
+
+The Chebyshev bound (red) is conservative — as we saw in Section 2.2, Chebyshev's bounds are loose for well-behaved distributions like the Normal. But the bound is guaranteed to hold for *any* distribution, and it is tight enough to prove the LLN: both the bound and the actual violation rate go to zero as $n \to \infty$.
+
+## 2.4 Chernoff Bounds
+
+### 2.4.1 Application
+
+Markov's Inequality gives a bound based on the mean. Chebyshev tightens it using the variance. Chernoff bounds go further, using the full moment generating function (MGF), and produce *exponentially* decaying tail probabilities rather than the polynomial $1/k^2$ of Chebyshev.
+
+Chernoff bounds are particularly useful for sums of independent random variables. For $S_n = X_1 + \cdots + X_n$ with $X_i \sim \text{Bernoulli}(p)$ and $\mu = np$, the Chernoff bound states that for $0 < \delta \leq 1$:
+
+$$P(S_n \geq (1+\delta)\mu) \leq e^{-\mu\delta^2/3}$$
+
+The key feature: the right-hand side decays *exponentially* in $\mu\delta^2$. Compare this to Chebyshev's $\frac{1}{\delta^2}$, which decays only polynomially in $\delta$.
+
+Let's see this in practice with $S_n \sim \text{Binomial}(100, 0.3)$, so $\mu = 30$.
+
+```{r}
+n <- 100; p <- 0.3; mu <- n * p
+
+delta_vals <- seq(0.1, 1.0, by = 0.1)
+a_vals     <- (1 + delta_vals) * mu
+
+bounds_df <- tibble(
+  delta     = delta_vals,
+  a         = a_vals,
+  actual    = pbinom(a_vals - 1, n, p, lower.tail = FALSE),
+  chernoff  = exp(-mu * delta_vals^2 / 3),
+  chebyshev = pmin(1, (n * p * (1-p)) / (a_vals - mu)^2)
+)
+
+bounds_df |>
+  mutate(across(actual:chebyshev, ~round(., 4))) |>
+  flextable()
+```
+
+The Chernoff bound overtakes Chebyshev quickly. By $\delta = 0.5$ ($a = 45$), Chebyshev says the probability is at most 9.3%, while Chernoff says at most 0.8%. The actual probability is 0.1%.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+bounds_long <- bounds_df |>
+  pivot_longer(cols = c(chernoff, chebyshev, actual),
+               names_to = "method", values_to = "probability") |>
+  mutate(method = factor(method,
+                         levels = c("chebyshev", "chernoff", "actual"),
+                         labels = c("Chebyshev bound", "Chernoff bound", "Actual probability")))
+
+ggplot(bounds_long, aes(x = delta, y = probability, color = method, linetype = method)) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("Chebyshev bound"    = "#BA0C2F",
+                                "Chernoff bound"     = "#E8820C",
+                                "Actual probability" = "#0067B9")) +
+  scale_linetype_manual(values = c("Chebyshev bound"    = "dashed",
+                                   "Chernoff bound"     = "dashed",
+                                   "Actual probability" = "solid")) +
+  scale_y_log10(labels = scales::label_number(accuracy = 0.0001)) +
+  labs(title    = "Chebyshev vs Chernoff: P(S\u2099 \u2265 (1+\u03b4)\u03bc), Binomial(100, 0.3)",
+       subtitle = "Log scale  |  Chernoff decays exponentially; Chebyshev polynomially",
+       x        = "\u03b4 (fractional deviation above mean)",
+       y        = "Probability (log scale)",
+       color    = NULL, linetype = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+### 2.4.2 Derivation
+
+The derivation rests on a single idea: $e^{tX}$ is a non-negative random variable, so Markov's Inequality applies to it.
+
+**Step 1: Apply Markov to $e^{tX}$.**
+
+For any $t > 0$ and threshold $a$:
+
+$$P(X \geq a) = P\big(e^{tX} \geq e^{ta}\big) \leq \frac{E\big[e^{tX}\big]}{e^{ta}} = e^{-ta} \cdot M_X(t)$$
+
+where $M_X(t) = E[e^{tX}]$ is the moment generating function. This is valid for any $t > 0$ because $e^{tX}$ is non-negative.
+
+**Step 2: Optimize over $t$.**
+
+Since the bound holds for *all* $t > 0$, we take the minimum:
+
+$$P(X \geq a) \leq \inf_{t > 0} \; e^{-ta} \cdot M_X(t)$$
+
+**Step 3: Apply to sums of independent variables.**
+
+For $S_n = \sum_{i=1}^n X_i$ with $X_i$ independent:
+
+$$M_{S_n}(t) = \prod_{i=1}^n M_{X_i}(t) = M_X(t)^n$$
+
+So the bound becomes $e^{-ta} M_X(t)^n$, and we optimize over $t > 0$.
+
+**Step 4: Specialize to Bernoulli.**
+
+For $X_i \sim \text{Bernoulli}(p)$: $M_X(t) = 1 - p + pe^t \leq e^{p(e^t - 1)}$.
+
+With $a = (1+\delta)\mu$ and $\mu = np$, substituting and optimizing over $t$ (setting $t = \ln(1+\delta)$):
+
+$$P(S_n \geq (1+\delta)\mu) \leq \left(\frac{e^\delta}{(1+\delta)^{1+\delta}}\right)^\mu$$
+
+Using the bound $(1+\delta)^{1+\delta} \geq e^{\delta + \delta^2/3}$ for $0 < \delta \leq 1$ gives the simplified form:
+
+$$P(S_n \geq (1+\delta)\mu) \leq e^{-\mu\delta^2/3}$$
+
+Recap:
+
+- The pivotal move is applying Markov to $e^{tX}$ rather than to $X$ or $(X-\mu)^2$. The exponential "blows up" the tail relative to the center, which is why the bound is so tight.
+- The MGF of a sum of independent variables is the product of individual MGFs. This is what allows the bound to scale cleanly with $n$.
+- The optimized $t$ is different for each threshold $a$. For Bernoulli, $t^* = \ln(1+\delta)$.
+- The exponential decay $e^{-\mu\delta^2/3}$ should be contrasted with Chebyshev's $\frac{1}{\delta^2}$: for any fixed $\delta > 0$, Chernoff becomes exponentially tighter as $\mu$ (equivalently $n$) grows.
+
+## 2.5 Higher Moments
+
+### 2.5.1 Application
+
+Markov uses the first moment. Chebyshev uses the second. A natural generalization: for any integer $k \geq 1$ and non-negative random variable $X$:
+
+$$P(X \geq a) = P(X^k \geq a^k) \leq \frac{E[X^k]}{a^k}$$
+
+Using higher moments tightens the bound when those moments are well-controlled. For the same threshold $a$, a larger $k$ can produce a smaller bound — provided $E[X^k]$ doesn't grow too fast.
+
+Let's apply this to $X \sim \text{Exponential}(1)$, where $E[X^k] = k!$ The actual tail probability is $P(X \geq a) = e^{-a}$.
+
+```{r}
+hm_df <- expand_grid(a = c(2, 3, 5, 8), k = 1:8) |>
+  mutate(
+    bound  = factorial(k) / a^k,
+    actual = exp(-a),
+    bound_capped = pmin(bound, 1)
+  )
+
+hm_df |>
+  select(a, k, bound_capped, actual) |>
+  mutate(across(c(bound_capped, actual), ~round(., 4))) |>
+  pivot_wider(names_from = a, values_from = bound_capped,
+              names_prefix = "a=") |>
+  flextable() |>
+  add_header_row(values = c("", "Bound k!/aᵏ  (actual probability in parentheses)"),
+                 colwidths = c(2, 4))
+```
+
+The optimal $k$ — the one minimizing the bound — shifts to larger values as $a$ grows. But even at the optimal $k$, the bound remains considerably above the actual tail probability $e^{-a}$. This shows a limitation of the moment approach: the factorial growth of $k!$ causes the bound to eventually worsen for any fixed $a$.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+hm_plot <- hm_df |>
+  filter(a %in% c(3, 5, 8)) |>
+  group_by(a) |>
+  mutate(is_min = bound == min(bound))
+
+ggplot(hm_plot, aes(x = k, y = pmin(bound, 1.5))) +
+  geom_line(color = "#0067B9", linewidth = 0.8) +
+  geom_point(aes(color = is_min), size = 3) +
+  geom_hline(aes(yintercept = actual), linetype = "dashed",
+             color = "#BA0C2F", linewidth = 0.8) +
+  scale_color_manual(values = c("FALSE" = "#0067B9", "TRUE" = "#E8820C"),
+                     labels = c("FALSE" = "Other k", "TRUE" = "Optimal k"),
+                     name = NULL) +
+  scale_x_continuous(breaks = 1:8) +
+  facet_wrap(~paste0("a = ", a), scales = "free_y") +
+  labs(title    = "Higher Moment Bounds for Exponential(1): k!/aᵏ",
+       subtitle = "Red dashed = actual P(X \u2265 a)  |  Orange = optimal k  |  Bound first falls, then rises",
+       x        = "Moment order k",
+       y        = "Bound k! / a\u1d4f") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+### 2.5.2 Derivation
+
+The derivation is a direct application of Markov's Inequality.
+
+For any non-negative random variable $X$, raising both sides to the power $k$ preserves the inequality:
+
+$$X \geq a \implies X^k \geq a^k$$
+
+So the two events are equivalent, and $X^k$ is non-negative:
+
+$$P(X \geq a) = P(X^k \geq a^k) \leq \frac{E[X^k]}{a^k}$$
+
+This is it. The only question is which $k$ gives the tightest bound, and that depends on how fast $E[X^k]$ grows relative to $a^k$. The connection to Chernoff is immediate: the Chernoff bound can be seen as applying this idea to the "continuous" analogue $g(X) = e^{tX}$, which happens to grow more slowly (for the right distributions) than polynomial moments.
+
+## 2.6 Gaussian Annulus
+
+### 2.6.1 Application
+
+In high-dimensional space, something geometrically surprising happens. Draw a point uniformly at random from a $d$-dimensional standard Gaussian — that is, $X = (X_1, \ldots, X_d)$ with each $X_i \sim N(0,1)$ independently. Where does the point land?
+
+In $d = 2$ or $d = 3$ dimensions, the mass is spread through the interior of a ball. But as $d$ grows, the mass concentrates in a thin shell — an *annulus* — near the surface of a sphere of radius $\sqrt{d}$. The interior of the ball is essentially empty.
+
+The **Gaussian Annulus Theorem** makes this precise. For any $\beta > 0$:
+
+$$P\Big(|\, |X| - \sqrt{d}\,| \geq \beta\Big) \leq \frac{2}{\beta^2}$$
+
+With probability at least $1 - 2/\beta^2$, the norm $|X|$ lies within $\beta$ of $\sqrt{d}$. The shell has width $O(1)$ while its radius grows as $\sqrt{d}$ — so the shell becomes *relatively* thinner as dimension increases.
+
+### 2.6.2 Derivation
+
+Let $Y = |X|^2 = \sum_{i=1}^d X_i^2$. We analyze $Y$ first, then convert to a statement about $|X|$.
+
+**Step 1: Mean and variance of $Y$.**
+
+Each $X_i^2$ has $E[X_i^2] = 1$ and $E[X_i^4] = 3$ (the fourth moment of the standard normal), so $\text{Var}(X_i^2) = 3 - 1 = 2$. By independence:
+
+$$E[Y] = d \qquad \text{Var}(Y) = 2d$$
+
+**Step 2: Apply Chebyshev to $Y$.**
+
+$$P\big(|Y - d| \geq t\big) \leq \frac{\text{Var}(Y)}{t^2} = \frac{2d}{t^2}$$
+
+Setting $t = 2\beta\sqrt{d}$:
+
+$$P\big(|\,|X|^2 - d\,| \geq 2\beta\sqrt{d}\big) \leq \frac{2d}{4\beta^2 d} = \frac{1}{2\beta^2}$$
+
+**Step 3: Convert from $|X|^2$ to $|X|$.**
+
+If $|X|^2$ is within $2\beta\sqrt{d}$ of $d$, then $|X|^2 \in [d - 2\beta\sqrt{d},\; d + 2\beta\sqrt{d}]$.
+
+For large $d$, $2\beta\sqrt{d}$ is small relative to $d$, so we can linearize: $\sqrt{d \pm 2\beta\sqrt{d}} \approx \sqrt{d} \pm \beta$. Therefore $|X| \in [\sqrt{d} - \beta,\; \sqrt{d} + \beta]$ with probability at least $1 - 1/(2\beta^2)$.
+
+A tighter statement using both tails gives the result:
+
+$$P\Big(|\,|X| - \sqrt{d}\,| \geq \beta\Big) \leq \frac{2}{\beta^2}$$
+
+Recap:
+
+- The derivation requires nothing beyond Chebyshev applied to $|X|^2 = \sum X_i^2$.
+- The concentration is a consequence of variance shrinking relative to the mean. $\text{Var}(Y)/E[Y]^2 = 2d/d^2 = 2/d \to 0$: as $d$ grows, $Y/d$ becomes increasingly concentrated around 1.
+- This has a striking geometric implication: in high dimensions, two randomly drawn Gaussian points are nearly always at the same distance from the origin, and that distance is close to $\sqrt{d}$.
+
+### 2.6.3 Simulation
+
+```{r}
+set.seed(3291)
+
+n_samp <- 2000
+d_vals <- c(2, 5, 20, 100, 500)
+
+annulus_df <- map_dfr(d_vals, function(d) {
+  X     <- matrix(rnorm(n_samp * d), nrow = n_samp)
+  norms <- sqrt(rowSums(X^2))
+  tibble(d = d, norm = norms, norm_scaled = norms / sqrt(d))
+})
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+# Density plots scaled so comparison across d is clear
+ggplot(annulus_df, aes(x = norm_scaled)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50,
+                 fill = "#0067B9", alpha = 0.65, color = "white") +
+  geom_vline(xintercept = 1, linetype = "dashed",
+             color = "#BA0C2F", linewidth = 0.9) +
+  facet_wrap(~factor(paste0("d = ", d),
+                     levels = paste0("d = ", d_vals)),
+             scales = "free_y") +
+  labs(title    = "Gaussian Annulus: Distribution of ||X|| / \u221ad",
+       subtitle = "Red dashed line = 1  |  As d grows, mass concentrates tightly around 1",
+       x        = "||X|| / \u221ad",
+       y        = "Density") +
+  theme_minimal()
+```
+
+The spread of $\|X\|/\sqrt{d}$ matches the theoretical standard deviation of $1/\sqrt{2d}$ precisely:
+
+```{r}
+annulus_df |>
+  group_by(d) |>
+  summarise(
+    mean_norm_scaled = round(mean(norm_scaled), 4),
+    sd_norm_scaled   = round(sd(norm_scaled), 4),
+    theoretical_sd   = round(1 / sqrt(2 * d[1]), 4),
+    .groups = "drop"
+  ) |>
+  flextable()
+```
+
+As $d$ increases from 2 to 500, the standard deviation of $\|X\|/\sqrt{d}$ shrinks from 0.47 to 0.03 — following $1/\sqrt{2d}$ closely. By $d = 500$, virtually all points fall within 0.1 of the sphere of radius $\sqrt{d}$.
+
+## 2.7 Power Law Distributions
+
+### 2.7.1 Application
+
+A distribution follows a **power law** if its tail probability decays as a power of $x$:
+
+$$P(X \geq x) \sim C x^{-\alpha} \quad \text{for large } x$$
+
+where $\alpha > 0$ is the *tail exponent*. The smaller $\alpha$, the heavier the tail.
+
+Power laws arise in a wide range of phenomena: wealth (Pareto principle), city populations (Zipf's law), earthquake magnitudes, degree distributions in networks, and insurance losses.
+
+The **Pareto distribution** is the canonical example: for $x \geq x_m$,
+
+$$P(X \geq x) = \left(\frac{x_m}{x}\right)^\alpha$$
+
+The moments of a Pareto distribution exist only up to order $\alpha$:
+
+| $\alpha$ | Moments that exist | Implications |
+|---|---|---|
+| $\alpha > 2$ | Mean and variance | Chebyshev applies; LLN holds normally |
+| $1 < \alpha \leq 2$ | Mean, but no variance | Chebyshev inapplicable; LLN holds, but convergence is slow |
+| $\alpha \leq 1$ | Neither mean nor variance | LLN breaks down entirely |
+
+This is why power laws are problematic for standard statistical machinery: most of the inequalities derived in this chapter require at minimum a finite mean, and often a finite variance.
+
+### 2.7.2 Simulation
+
+```{r}
+set.seed(7162)
+
+rpareto <- function(n, alpha, x_m = 1) x_m / runif(n)^(1 / alpha)
+
+n_obs_pl  <- 2000
+n_reps_pl <- 30
+alpha_vals <- c(0.8, 1.5, 2.5)
+
+power_law_data <- map_dfr(alpha_vals, function(a) {
+  mu_true <- if (a > 1) a / (a - 1) else NA_real_
+  X       <- matrix(rpareto(n_obs_pl * n_reps_pl, a), nrow = n_reps_pl)
+  running <- t(apply(X, 1, function(x) cumsum(x) / seq_along(x)))
+  tibble(
+    alpha   = a,
+    rep     = rep(1:n_reps_pl, each = n_obs_pl),
+    n       = rep(1:n_obs_pl,  times = n_reps_pl),
+    xbar    = as.vector(t(running)),
+    mu_true = mu_true
+  )
+})
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+alpha_labels <- c(
+  "0.8" = "\u03b1 = 0.8  (mean undefined \u2014 LLN fails)",
+  "1.5" = "\u03b1 = 1.5  (finite mean, infinite variance)",
+  "2.5" = "\u03b1 = 2.5  (finite mean and variance)"
+)
+
+mu_ref <- power_law_data |>
+  distinct(alpha, mu_true) |>
+  filter(!is.na(mu_true))
+
+n_pl_plot <- c(1:50, seq(55, 2000, by = 10))
+
+ggplot(power_law_data |> filter(n %in% n_pl_plot),
+       aes(x = n, y = xbar, group = rep)) +
+  geom_line(color = "#0067B9", alpha = 0.25, linewidth = 0.3) +
+  geom_hline(data = mu_ref, aes(yintercept = mu_true),
+             linetype = "dashed", color = "#BA0C2F", linewidth = 0.9) +
+  scale_x_log10(breaks = c(1, 10, 100, 1000, 2000),
+                labels = c("1", "10", "100", "1,000", "2,000")) +
+  scale_y_continuous(limits = function(x) c(0, min(max(x), quantile(x, 0.99)))) +
+  facet_wrap(~alpha, scales = "free_y",
+             labeller = labeller(alpha = alpha_labels)) +
+  labs(title    = "Power Law: Running Mean Convergence by Tail Exponent \u03b1",
+       subtitle = "Red dashed = true \u03bc (where finite)  |  30 replications per panel",
+       x        = "Sample size n (log scale)",
+       y        = "Sample mean") +
+  theme_minimal() +
+  theme(panel.spacing = unit(1.5, "lines"))
+```
+
+For $\alpha = 2.5$: convergence is fast and tight, consistent with Chebyshev's $\sigma^2/n$ guarantee. For $\alpha = 1.5$: the mean is finite ($\mu = 3$) and the sample mean does converge, but slowly and erratically — the infinite variance means Chebyshev gives no useful bound. For $\alpha = 0.8$: there is no finite mean to converge to. The running means wander without settling, and the occasional enormous draw can shift the average dramatically even at large $n$.
+
+## 2.8 Master Tail Bounds Theorem
+
+All of the concentration inequalities in this chapter follow from a single idea. For any *non-decreasing* function $g \geq 0$:
+
+$$P(X \geq a) = P\big(g(X) \geq g(a)\big) \leq \frac{E\big[g(X)\big]}{g(a)}$$
+
+The first equality holds because $g$ is non-decreasing. The inequality is Markov's Inequality applied to the non-negative random variable $g(X)$.
+
+Every result in this chapter is a special case of this template:
+
+| Bound | Choice of $g(x)$ | Resulting bound |
+|---|---|---|
+| Markov | $g(x) = x$ | $E[X]\;/\;a$ |
+| Chebyshev | $g(x) = (x - \mu)^2$ | $\text{Var}(X)\;/\;\epsilon^2$ |
+| $k$-th moment | $g(x) = x^k$ | $E[X^k]\;/\;a^k$ |
+| Chernoff | $g(x) = e^{tx}$ | $e^{-ta}\,M_X(t)$ |
+
+The "art" in applying the master theorem is choosing $g$ to minimize the resulting bound for the distribution and threshold at hand. The choices above are not arbitrary:
+
+- $g(x) = x$ uses the least information but is universally applicable.
+- $g(x) = (x-\mu)^2$ introduces variance, tightening the bound for distributions where spread is small.
+- $g(x) = x^k$ for large $k$ works well when the distribution has light tails (moments don't grow too fast).
+- $g(x) = e^{tx}$ is optimal for many distributions precisely because the exponential grows faster than any polynomial, meaning $E[e^{tX}]/e^{ta}$ decays exponentially fast.
+
+The Chernoff bound is so powerful because $e^{tx}$ amplifies large values of $X$ more aggressively than any polynomial. When $X$ is unlikely to be large, this aggressive amplification means $E[e^{tX}]$ remains small, and the bound is tight.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+# Unified comparison: all four bounds for Exponential(1) at a = 3
+a_ref <- 3
+t_opt <- 1 - 1/a_ref   # optimal t for Chernoff on Exp(1): minimizes e^{-ta}/(1-t)
+
+comparison <- tibble(
+  Bound     = c("Markov", "Chebyshev (k=2)", "4th Moment", "Chernoff"),
+  `g(x)`    = c("x", "(x \u2212 \u03bc)\u00b2", "x\u2074", "e\u1d57\u02e3"),
+  Value     = c(
+    1 / a_ref,
+    pmin(1, 2 / a_ref^2),                              # E[(X-1)^2] = Var = 1
+    factorial(4) / a_ref^4,                            # E[X^4] = 4!
+    exp(-t_opt * a_ref) / (1 - t_opt)                  # Chernoff MGF for Exp(1)
+  ),
+  Actual    = exp(-a_ref)
+) |>
+  mutate(across(c(Value, Actual), ~round(., 4)))
+
+comparison |> flextable()
+```
+
+For $X \sim \text{Exponential}(1)$ at $a = 3$: Markov gives 0.333, Chebyshev gives 0.222, the 4th moment gives 0.296, and Chernoff gives 0.100 — against an actual probability of 0.050. Each tighter bound requires more information about the distribution (mean → variance → higher moments → full MGF), but rewards that information with a smaller bound.
 

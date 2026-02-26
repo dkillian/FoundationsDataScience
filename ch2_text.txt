@@ -1,0 +1,1565 @@
+2     High-Dimensional Space
+2.1     Introduction
+
+    High dimensional data has become very important. However, high dimensional space
+is very different from the two and three dimensional spaces we are familiar with. Generate
+n points at random in d-dimensions where each coordinate is a zero mean, unit variance
+Gaussian. For sufficiently large d, with high probability the distances between all pairs
+of points will be essentially the same. Also the volume of the unit ball in d-dimensions,
+the set of all points x such that |x| ≤ 1, goes to zero as the dimension goes to infinity.
+The volume of a high dimensional unit ball is concentrated near its surface and is also
+concentrated at its equator. These properties have important consequences which we will
+consider.
+
+2.2     The Law of Large Numbers
+    If one generates random points in d-dimensional space using a Gaussian to generate
+coordinates, the distance between all pairs of points will be essentially the same when d
+is large. The reason is that the square of the distance between two points y and z,
+                                                d
+                                                X
+                                              2
+                                      |y − z| =   (yi − zi )2 ,
+                                                   i=1
+
+can be viewed as the sum of d independent samples of a random variable x that is the
+squared difference of two Gaussians. In particular, we are summing independent samples
+xi = (yi −zi )2 of a random variable x of bounded variance. In such a case, a general bound
+known as the Law of Large Numbers states that with high probability, the average of the
+samples will be close to the expectation of the random variable. This in turn implies that
+with high probability, the sum is close to the sum’s expectation.
+
+    Specifically, the Law of Large Numbers states that
+                                                          
+                            x1 + x2 + · · · + xn              V ar(x)
+                    Prob                         − E(x) ≥  ≤         .                            (2.1)
+                                    n                           n2
+The larger the variance of the random variable, the greater the probability that the error
+will exceed . Thus the variance of x is in the numerator. The number of samples n is in
+the denominator since the more values that are averaged, the smaller the probability that
+the difference will exceed . Similarly the larger  is, the smaller the probability that the
+    This material has been published by Cambridge University Press as Foundations of Data Science by
+Avrim Blum, John Hopcroft, and Ravi Kannan. This pre-publication version is free to view and download
+for personal use only. Not for re-distribution, re-sale or use in derivative works. Please do not re-post
+or mirror, instead link to http://ttic.edu/blum/book.pdf. c Avrim Blum, John Hopcroft, and Ravi
+Kannan 2020. https://www.cambridge.org/9781108485067
+
+
+                                                   12
+
+
+--- PAGE BREAK ---
+
+difference will exceed  and hence  is in the denominator. Notice that squaring  makes
+the fraction a dimensionless quantity.
+
+    We use two inequalities to prove the Law of Large Numbers. The first is Markov’s
+inequality that states that the probability that a non-negative random variable exceeds a
+is bounded by the expected value of the variable divided by a.
+
+Theorem 2.1 (Markov’s inequality) Let x be a non-negative random variable. Then
+for a > 0,
+                                          E(x)
+                           Prob(x ≥ a) ≤       .
+                                            a
+Proof: For a continuous non-negative random variable x with probability density p,
+
+                             Z∞               Za               Z∞
+                   E (x) =        xp(x)dx =        xp(x)dx +        xp(x)dx
+                             0                0                a
+                             Z∞                   Z∞
+                         ≥        xp(x)dx ≥ a          p(x)dx = aProb(x ≥ a).
+                             a                    a
+
+
+Thus, Prob(x ≥ a) ≤ E(x)
+                     a
+                         .
+
+   The same proof works for discrete random variables with sums instead of integrals.
+
+
+Corollary 2.2 Prob x ≥ bE(x) ≤ 1b
+                            
+
+  Markov’s inequality bounds the tail of a distribution using only information about the
+mean. A tighter bound can be obtained by also using the variance of the random variable.
+
+Theorem 2.3 (Chebyshev’s inequality) Let x be a random variable. Then for c > 0,
+                                              V ar(x)
+                          Prob |x − E(x)| ≥ c ≤          .
+                                                     c2
+                                                    
+Proof: Prob |x − E(x)| ≥ c = Prob |x − E(x)|2 ≥ c2 . Note that y = |x − E(x)|2 is a
+non-negative random variable and E(y) = V ar(x), so Markov’s inequality can be applied
+giving:
+                                                  E(|x − E(x)|2 )   V ar(x)
+     Prob(|x − E(x)| ≥ c) = Prob |x − E(x)|2 ≥ c2 ≤        2
+                                                                   =         .
+                                                         c              c2
+
+
+
+
+                                                  13
+
+
+--- PAGE BREAK ---
+
+   The Law of Large Numbers follows from Chebyshev’s inequality together with facts
+about independent random variables. Recall that:
+
+                                E(x + y) = E(x) + E(y),
+                                V ar(x − c) = V ar(x),
+                                V ar(cx) = c2 V ar(x).
+
+Also, if x and y are independent, then E(xy) = E(x)E(y). These facts imply that if x
+and y are independent then V ar(x + y) = V ar(x) + V ar(y), which is seen as follows:
+
+           V ar(x + y) = E(x + y)2 − E 2 (x + y)
+                       = E(x2 + 2xy + y 2 ) − E 2 (x) + 2E(x)E(y) + E 2 (y)
+                                                                              
+
+                       = E(x2 ) − E 2 (x) + E(y 2 ) − E 2 (y) = V ar(x) + V ar(y),
+
+where we used independence to replace E(2xy) with 2E(x)E(y).
+
+Theorem 2.4 (Law of Large Numbers) Let x1 , x2 , . . . , xn be n independent samples
+of a random variable x. Then
+                           x + x + ··· + x              V ar(x)
+                             1    2         n
+                    Prob                      − E(x) ≥  ≤
+                                    n                       n2
+                        
+Proof: E x1 +x2 +···+x
+                n
+                       n
+                           = E(x) and thus
+     x + x + ··· + x                   x + x + ··· + x      x + x + · · · + x    
+       1   2          n                    1   2          n      1   2           n
+Prob                    −E(x) ≥  = Prob                    −E                      ≥
+             n                                   n                     n
+By Chebyshev’s inequality
+     x + x + ··· + x                       x + x + ··· + x          x + x + · · · + x    
+       1   2           n                         1      2        n        1     2        n
+Prob                     − E(x) ≥  = Prob                         −E                       ≥
+              n                                           n                      n
+                                             x1 +x2 +···+xn
+                                       V ar         n
+                                     ≤
+                                                2
+                                        1
+                                     = 2 2 V ar(x1 + x2 + · · · + xn )
+                                       n
+                                        1                                            
+                                     = 2 2 V ar(x1 ) + V ar(x2 ) + · · · + V ar(xn )
+                                       n
+                                       V ar(x)
+                                     =         .
+                                         n2
+
+
+    The Law of Large Numbers is quite general, applying to any random variable x of
+finite variance. Later we will look at tighter concentration bounds for spherical Gaussians
+and sums of 0-1 valued random variables.
+
+
+                                            14
+
+
+--- PAGE BREAK ---
+
+    One observation worth making about the Law of Large Numbers is that the size of the
+universe does not enter into the bound. For instance, if you want to know what fraction
+of the population of a country prefers tea to coffee, then the number n of people you need
+to sample in order to have at most a δ chance that your estimate is off by more than 
+depends only on  and δ and not on the population of the country.
+
+    As an application of the Law of Large Numbers, let z be a d-dimensional random point
+                                                           1
+whose coordinates are each selected from a zero mean, 2π     variance Gaussian. We set the
+             1
+variance to 2π so the Gaussian probability density equals one at the origin and is bounded
+below throughout the unit ball by a constant.1 By the Law of Large Numbers, the square
+of the distance of z to the origin will be Θ(d) with high probability. In particular, there is
+vanishingly small probability that such a random point z would lie in the unit ball. This
+implies that the integral of the probability density over the unit ball must be vanishingly
+small. On the other hand, the probability density in the unit ball is bounded below by a
+constant. We thus conclude that the unit ball must have vanishingly small volume.
+
+   Similarly if we draw two points y and z from a d-dimensional Gaussian with unit
+variance in each direction, then |y|2 ≈ d and |z|2 ≈ d. Since for all i,
+
+      E(yi − zi )2 = E(yi2 ) + E(zi2 ) − 2E(yi zi ) = V ar(yi ) + V ar(zi ) − 2E(yi )E(zi ) = 2,
+            d
+|y−z|2 =        (yi −zi )2 ≈ 2d. Thus by the Pythagorean theorem, the random d-dimensional
+            P
+            i=1
+y and z must be approximately orthogonal. This implies that if we scale these random
+points to be unit length and call y the North Pole, much of the surface area of the unit ball
+must lie near the equator. We will formalize these and related arguments in subsequent
+sections.
+
+   We now state a general theorem on probability tail bounds for a sum of indepen-
+dent random variables. Tail bounds for sums of Bernoulli, squared Gaussian and Power
+Law distributed random variables can all be derived from this. The table in Figure 2.1
+summarizes some of the results.
+
+Theorem 2.5 (Master Tail Bounds Theorem) Let x = x1 + x2 + · · · + xn , where
+x1 , x2 , . . . , xn are mutually
+                             √ independent    random variables with zero mean and variance at
+most σ . Let 0 ≤ a ≤ 2nσ . Assume that |E(xsi )| ≤ σ 2 s! for s = 3, 4, . . . , b(a2 /4nσ 2 )c.
+           2                      2
+
+Then,
+                                                         2      2
+                                    Prob (|x| ≥ a) ≤ 3e−a /(12nσ ) .
+
+    The proof of Theorem 2.5 is elementary. A slightly more general version, Theorem 12.5,
+is given in the appendix. For a brief intuition of the proof, consider applying Markov’s
+inequality to the random variable xr where r is a large even number. Since r is even, xr
+  1
+   If we instead used variance 1, then the density at the origin would be a decreasing function of d,
+          1 d/2
+namely ( 2π ) , making this argument more complicated.
+
+
+                                                 15
+
+
+--- PAGE BREAK ---
+
+is non-negative, and thus Prob(|x| ≥ a) = Prob(xr ≥ ar ) ≤ E(xr )/ar . If E(xr ) is not
+too large, we will get a good bound. To compute E(xr ), write E(x) as E(x1 + . . . + xn )r
+and expand the polynomial into a sum of terms. Use the fact that by independence
+         r                   r
+E(xri i xj j ) = E(xri i )E(xj j ) to get a collection of simpler expectations that can be bounded
+using our assumption that |E(xsi )| ≤ σ 2 s!. For the full proof, see the appendix.
+
+                                  Condition                         Tail bound
+
+       Markov                       x≥0                         Prob(x ≥ a) ≤ E(x)
+                                                                               a
+
+
+                                                         Prob |x − E(x)| ≥ a ≤ Var (x)
+                                                                            
+      Chebyshev                     Any x                                       a2
+
+
+      Chernoff            x = x1 + x 2 + · · · + x n        Prob(|x − E(x)| ≥ εE(x))
+                                                                          2
+                         xi ∈ [0, 1] i.i.d. Bernoulli;             ≤ 3e−cε E(x)
+
+  Higher Moments           r positive even integer          Prob(|x| ≥ a) ≤ E(xr )/ar
+
+                              p                                       √                2
+      Gaussian            x = x21 + x22 +√· · · + x2n     Prob(|x −    n| ≥ β) ≤ 3e−cβ
+      Annulus           xi ∼ N (0, 1); β ≤ n indep.
+
+                                                                                   
+     Power Law             x = x1 + x2 + . . . + xn         Prob |x − E(x)| ≥ εE(x)
+ for xi ; order k ≥ 4        xi i.i.d ; ε ≤ 1/k 2               ≤ (4/ε2 kn)(k−3)/2
+
+Figure 2.1: Table of Tail Bounds. The Higher Moments bound is obtained by apply-
+ing Markov to xr . The Chernoff, Gaussian Annulus, and Power Law bounds follow from
+Theorem 2.5 which is proved in the appendix.
+
+
+2.3    The Geometry of High Dimensions
+   An important property of high-dimensional objects is that most of their volume is
+near the surface. Consider any object A in Rd . Now shrink A by a small amount  to
+produce a new object (1 − )A = {(1 − )x|x ∈ A}. Then the following equality holds:
+                       volume (1 − )A = (1 − )d volume(A).
+                                       
+
+To see that this is true, partition A into infinitesimal cubes. Then, (1 − ε)A is the union
+of a set of cubes obtained by shrinking the cubes in A by a factor of 1 − ε. When we
+shrink each of the 2d sides of a d-dimensional cube by a factor f , its volume shrinks by a
+factor of f d . Using the fact that 1 − x ≤ e−x , for any object A in Rd we have:
+                                            
+                            volume (1 − )A
+                                               = (1 − )d ≤ e−d .
+                                volume(A)
+
+                                               16
+
+
+--- PAGE BREAK ---
+
+                                                            Annulus of
+                                       1                    width d1
+                                        1 − d1
+
+
+
+
+Figure 2.2: Most of the volume of the d-dimensional ball of radius r is contained in an
+annulus of width O(r/d) near the boundary.
+
+
+Fixing  and letting d → ∞, the above quantity rapidly approaches zero. This means
+that nearly all of the volume of A must be in the portion of A that does not belong to
+the region (1 − )A.
+
+    Let S denote the unit ball in d dimensions, that is, the set of points within distance
+one of the origin. An immediate implication of the above observation is that at least a
+1 − e−d fraction of the volume of the unit ball is concentrated in S \ (1 − )S, namely
+in a small annulus of width  at the boundary. In particular, most of the volume of the
+d-dimensional unit ball is contained in an annulus of width O(1/d) near the boundary. If
+                                                     r
+                                                       
+the ball is of radius r, then the annulus width is O d .
+
+2.4     Properties of the Unit Ball
+   We now focus more specifically on properties of the unit ball in d-dimensional space.
+We just saw that most of its volume is concentrated in a small annulus of width O(1/d)
+near the boundary. Next we will show that in the limit as d goes to infinity, the volume of
+the ball goes to zero. This result can be proven in several ways. Here we use integration.
+
+2.4.1   Volume of the Unit Ball
+To calculate the volume V (d) of the unit ball in Rd , one can integrate in either Cartesian
+or polar coordinates. In Cartesian coordinates the volume is given by
+                                    √ 2            √
+                         xZ1 =1 x2 =Z 1−x1     xd = 1−x21 −···−x2d−1
+                                                      Z
+               V (d) =                     ···                       dxd · · · dx2 dx1 .
+                       x1 =−1
+                                    √ 2            √ 2          2
+                            x2 =−   1−x1    xd =−     1−x1 −···−xd−1
+
+
+
+
+                                                 17
+
+
+--- PAGE BREAK ---
+
+Since the limits of the integrals are complicated, it is easier to integrate using polar
+coordinates. In polar coordinates, V (d) is given by
+
+                                                        Z Z1
+                                         V (d) =                      rd−1 drdΩ.
+                                                        S d r=0
+
+Since the variables Ω and r do not interact,
+                                        Z          Z1                          Z
+                                                            d−1        1                   A(d)
+                              V (d) =        dΩ         r         dr =              dΩ =
+                                                                       d                    d
+                                        Sd     r=0                             Sd
+
+where A(d) is the surface area of the d-dimensional unit ball. For instance, for d = 3 the
+                                       4
+surface area is 4π and
+                     R the volume is 3 π. The question remains, how to determine the
+surface area A (d) = dΩ for general d.
+                         Sd
+
+   Consider a different integral
+                                  Z∞ Z∞            Z∞
+                                                        e−(x1 +x2 +···xd ) dxd · · · dx2 dx1 .
+                                                                  2    2       2
+                        I (d) =              ···
+                                  −∞ −∞           −∞
+
+Including the exponential allows integration to infinity rather than stopping at the surface
+of the sphere. Thus, I(d) can be computed by integrating in both Cartesian and polar
+coordinates. Integrating in polar coordinates will relate I(d) to the surface area A(d).
+Equating the two results for I(d) allows one to solve for A(d).
+
+   First, calculate I(d) by integration in Cartesian coordinates.
+                                         ∞     d
+                                                    √ d
+                                         Z
+                                             2            d
+                                I (d) =  e−x dx =  π = π2.
+                                             −∞
+                                   R∞     2     √
+Here, we have used the fact that −∞ e−x dx = π. For a proof of this, see Section 12.2
+of the appendix. Next, calculate I(d) by integrating in polar coordinates. The volume of
+the differential element is rd−1 dΩdr. Thus,
+                                                   Z          Z∞
+                                                                           2
+                                        I (d) =          dΩ           e−r rd−1 dr.
+                                                   Sd         0
+               R
+The integral        dΩ is the integral over the entire solid angle and gives the surface area,
+               Sd
+                                                                      R∞ −r2 d−1
+A(d), of a unit sphere. Thus, I (d) = A (d)                             e r dr. Evaluating the remaining
+                                                                      0
+
+
+                                                             18
+
+
+--- PAGE BREAK ---
+
+integral gives
+               Z∞                           Z∞                                  1 Z∞                   
+                          −r2                             d−1
+                                                                
+                                                                      − 12
+                                                                                          d
+                                                                                       −t 2 − 1     1   d
+                      e         rd−1 dr =         e−t t    2        1
+                                                                    2
+                                                                      t      dt =     e t       dt = Γ
+                                                                                  2                 2   2
+                  0                         0                                            0
+
+                                            d
+and hence, I(d) = A(d) 12 Γ 2 where the Gamma function Γ (x) is a generalization of the
+                                              
+
+               √ for non-integer values of x. Γ (x) = (x − 1) Γ (x − 1), Γ (1) = Γ (2) = 1,
+factorial function
+and Γ 21 = π. For integer x, Γ (x) = (x − 1)!.
+                                      d
+    Combining I (d) = π 2 with I (d) = A (d) 12 Γ                                d
+                                                                                     
+                                                                                 2
+                                                                                         yields
+                                                                                 d
+                                                                          π2
+                                                                A (d) = 1 d 
+                                                                        2
+                                                                          Γ 2
+establishing the following lemma.
+Lemma 2.6 The surface area A(d) and the volume V (d) of a unit-radius ball in d di-
+mensions are given by
+                                                            d                                     d
+                                              2π 2                                       2π 2
+                                       A (d) = d                          and   V (d) =           .
+                                              Γ( 2 )                                    d Γ( d2 )
+
+    To check the formula for the volume of a unit ball, note that V (2) = π and V (3) =
+     3
+2 π2
+3 Γ( 3 )
+           = 34 π, which are the correct volumes for the unit balls in two and three dimen-
+     2
+sions. To check the formula for the surface area of a unit ball, note that A(2) = 2π and
+              3
+A(3) = 2π
+        1√
+          2
+           π
+             = 4π, which are the correct surface areas for the unit ball in two and three
+        2
+                         d
+dimensions. Note that π 2 is an exponential in d2 and Γ d2 grows as the factorial of d2 .
+                                                            
+
+This implies that lim V (d) = 0, as claimed.
+                                d→∞
+
+
+
+2.4.2       Volume Near the Equator
+    An interesting fact about the unit ball in high dimensions is that most of its volume
+is concentrated near its “equator”. In particular, for any unit-length vector v defining
+“north”, most of the volume of the√unit ball lies in the thin slab of points whose dot-
+product with v has magnitude O(1/ d). To show this fact, it suffices by symmetry to fix
+v to be the first coordinate
+                          √ vector. That is, we will show that most of the volume of the
+unit ball has |x1 | = O(1/ d). Using this fact, we will show that two random points in the
+unit ball are with high probability nearly orthogonal, and also give an alternative proof
+from the one in Section 2.4.1 that the volume of the unit ball goes to zero as d → ∞.
+                                                                                             2
+Theorem 2.7 For c ≥ 1 and d ≥ 3, at least a 1 − 2c e−c /2 fraction of the volume of the
+                                      c
+d-dimensional unit ball has |x1 | ≤ √d−1 .
+
+                                                                           19
+
+
+--- PAGE BREAK ---
+
+                                                                      2
+Proof: By symmetry we just need to prove that at most a 2c e−c /2 fraction of the half of
+                                c                                                     c
+the ball with x1 ≥ 0 has x1 ≥ √d−1 . Let A denote the portion of the ball with x1 ≥ √d−1
+and let H denote the upper hemisphere. We will then show that the ratio of the volume
+of A to the volume of H goes to zero by calculating an upper bound on volume(A) and
+a lower bound on volume(H) and proving that
+                       volume(A)   upper bound volume(A)  2 c2
+                                 ≤                       = e− 2 .
+                       volume(H)   lower bound volume(H)  c
+
+
+   To calculate the volume of A, integrate an incremental volumep      that is a disk of width
+dx1 and whose face is a ball of dimension d − 1 and radius 1 − x21 . The surface area of
+                      d−1
+the disk is (1 − x21 ) 2 V (d − 1) and the volume above the slice is
+                                        Z 1
+                                                       d−1
+                          volume(A) =        (1 − x21 ) 2 V (d − 1)dx1
+                                         √c
+                                          d−1
+
+                                                                 −x
+To get an upper bound  √ on the above integral, use 1 − x ≤ e       and integrate to infinity.
+To integrate, insert x1 cd−1 , which is greater than one in the range of integration, into the
+integral. Then
+               Z ∞      √                                         √
+                     x1 d − 1 − d−1 x21                             d−1 ∞
+                                                                          Z
+                                                                                     d−1 2
+ volume(A) ≤                     e  2    V (d − 1)dx1 = V (d − 1)               x1 e− 2 x1 dx1
+                √c        c                                          c      √c
+                 d−1                                                          d−1
+
+
+Now             Z ∞
+                             d−1 2             1 − d−1 x21 ∞          1 − c2
+                         x1 e− 2 x1 dx1 = −       e 2             =       e 2
+                  √c                          d−1          √ c
+                                                            (d−1)
+                                                                    d − 1
+                   d−1
+
+                                                      c2
+Thus, an upper bound on volume(A) is Vc√(d−1)
+                                          d−1
+                                              e− 2 .
+                                                        1
+ The volume of the hemisphere below the plane x1 = √d−1     is a lower bound on the entire
+                                                                                         1
+volume of the upper hemisphere and this volume is at least that of a cylinder of height √d−1
+           q                                                             d−1
+                  1                                                  1        1
+and radius 1 − d−1   . The volume of the cylinder is V (d − 1)(1 − d−1  ) 2 √d−1 . Using the
+fact that (1−x)a ≥ 1−ax for a ≥ 1, the volume of the cylinder is at least V2√(d−1)
+                                                                               d−1
+                                                                                   for d ≥ 3.
+
+   Thus,
+                                                                      2
+                                                            V (d−1) − c
+                           upper bound above plane           √
+                                                            c d−1
+                                                                    e 2    2 c2
+              ratio ≤                                 =        V (d−1)
+                                                                          = e− 2
+                         lower bound total hemisphere           √          c
+                                                               2 d−1
+
+
+
+One might ask why we computed a lower bound on the total hemisphere since it is one
+half of the volume of the unit ball which we already know. The reason is that the volume
+of the upper hemisphere is 12 V (d) and we need a formula with V (d − 1) in it to cancel the
+V (d − 1) in the numerator.
+
+                                                 20
+
+
+--- PAGE BREAK ---
+
+                                                 x1
+                                        
+                                        
+                                    H        A
+                                                         √c
+                                                           d−1
+
+
+
+
+Figure 2.3: Most of the volume of the upper hemisphere of the d-dimensional ball is
+                       c
+below the plane x1 = √d−1 .
+
+Near orthogonality. One immediate implication of the above analysis is that if we
+draw two points at random from the unit ball, with high probability their vectors will be
+nearly orthogonal to each other. Specifically, from our previous analysis in Section 2.3,
+with high probability both will be close to the surface and will have length 1 − O(1/d).
+From our analysis above, if we define the vector in the direction of the first point√ as
+“north”, with high probability the second will have a √   projection of only ±O(1/ d) in
+this direction, and thus their dot-product will be ±O(1/ d). This √  implies that with high
+probability, the angle between the two vectors will be π/2 ± O(1/ d). In particular, we
+have the following theorem that states that if we draw n points at random in the unit
+ball, with high probability all points will be close to unit length and each pair of points
+will be almost orthogonal.
+Theorem 2.8 Consider drawing n points x1 , x2 , . . . , xn at random from the unit ball.
+With probability 1 − O(1/n)
+  1. |xi | ≥ 1 − 2 lnd n for all i, and
+                  √
+  2. |xi · xj | ≤ √6d−1
+                     ln n
+                          for all i 6= j.
+Proof: For the first part, for any fixed i by the analysis of Section 2.3, the probability
+that |xi | < 1 −  is less than e−d . Thus
+                                            2 ln n       2 ln n
+                          Prob |xi | < 1 −           ≤ e−( d )d = 1/n2 .
+                                               d
+By the union bound, the probability there exists an i such that |xi | < 1 − 2 lnd n is at most
+1/n.
+
+    For the second part, Theorem 2.7 states that for a component of a Gaussian vector
+                                                c2
+                          c
+                                is at most 2c e− 2 . There are n2 pairs i and j and for each such
+                                                                 
+the probability |xi | > √d−1
+pair if we define xi as “north”,
+                           √
+                                     the probability that the projection of xj onto the “north”
+                                                        6 ln n
+direction is more than √d−1 is at most O(e− 2 ) = O(n−3 ). Thus, the dot-product
+                             6 ln n
+
+condition is violated with probability at most O n2 n−3 = O(1/n) as well.
+                                                                
+
+
+                                                 21
+
+
+--- PAGE BREAK ---
+
+                                                                   √
+            1                      1                                 d
+                √                                                   2
+                  2                        1
+                 2                                         1
+
+      1                      1                        1
+      2                      2                        2
+                                                                 ← Unit radius sphere
+
+                                                                 ←− Nearly all the volume
+                                                                   ← Vertex of hypercube
+
+
+Figure 2.4: Illustration of the relationship between the sphere and the cube in 2, 4, and
+d-dimensions.
+
+
+Alternative proof that volume goes to zero. Another immediate implication of
+Theorem 2.7 is that as d → ∞, the volume of the ball approaches zero. Specifically, con-
+                                                         2c
+sider a small box centered at the origin of side length √d−1 . Using Theorem 2.7, we show
+               √
+that for c = 2 ln d, this box contains over half of the volume of the ball. On the other
+hand, the volume of this box clearly goes to zero as d goes to infinity, since its volume is
+    ln d d/2
+O(( d−1 ) ). Thus the volume of the ball goes to zero as well.
+                              √                                                           c
+    By Theorem 2.7 with c = 2 ln d, the fraction of the volume of the ball with |x1 | ≥ √d−1
+is at most:
+                         2 − c2     1 −2 ln d         1       1
+                           e 2 =√        e     = √         < 2.
+                         c          ln d          d2 ln d    d
+Since this is true for each of the d dimensions, by a union bound at most a O( d1 ) ≤ 12
+fraction of the volume of the ball lies outside the cube, completing the proof.
+
+Discussion. One might wonder how it can be that nearly all the points in the unit ball
+are very close to the    surface and yet at the same time nearly all points are in a box of
+                   ln d
+side-length O d−1 . The answer is to remember that points on the surface of the ball
+                                                                                         
+satisfy x1 + x2 + . . . + xd = 1, so for each coordinate i, a typical value will be ±O √1d .
+          2     2           2
+
+In fact, it is often helpful to think of picking
+                                                a random point on the sphere as very similar
+                                               1     1    1         1
+to picking a random point of the form ± √d , ± √d , ± √d , . . . ± √d .
+
+2.5       Generating Points Uniformly at Random from a Ball
+
+    Consider generating points uniformly at random on the surface of the unit ball. For
+the 2-dimensional version of generating points on the circumference of a unit-radius cir-
+cle, independently generate each coordinate uniformly at random from the interval [−1, 1].
+This produces points distributed over a square that is large enough to completely contain
+the unit circle. Project each point onto the unit circle. The distribution is not uniform
+
+                                               22
+
+
+--- PAGE BREAK ---
+
+since more points fall on a line from the origin to a vertex of the square than fall on a line
+from the origin to the midpoint of an edge of the square due to the difference in length.
+To solve this problem, discard all points outside the unit circle and project the remaining
+points onto the circle.
+
+     In higher dimensions, this method does not work since the fraction of points that fall
+inside the ball drops to zero and all of the points would be thrown away. The solution is to
+generate a point each of whose coordinates is an independent Gaussian variable. Generate
+x1 , x2 , . . . , xd , using a zero mean, unit variance Gaussian, namely, √12π exp(−x2 /2) on the
+real line.2 Thus, the probability density of x is
+
+                                                 1           x21 +x22 +···+x2d
+                                                         −
+                                  p (x) =            d e
+                                                                      2
+                                              (2π) 2
+
+and is spherically symmetric. Normalizing the vector x = (x1 , x2 , . . . , xd ) to a unit vector,
+         x
+namely |x| , gives a distribution that is uniform over the surface of the sphere. Note that
+once the vector is normalized, its coordinates are no longer statistically independent.
+
+    To generate a point y uniformly over the ball (surface and interior), scale the point
+ x
+|x|
+    generated on the surface by a scalar ρ ∈ [0, 1].     What should the distribution of ρ be
+as a function of r? It is certainly not uniform, even in 2 dimensions. Indeed, the density
+of ρ at r is proportional to r for d = 2. For d = 3, it is proportional to r2 . By similar
+                                                                   d−1
+reasoning,
+R r=1 d−1 the density of ρ at distance r is proportional to r          in d dimensions. Solving
+ r=0
+     cr dr = 1 (the integral of density must equal 1) one should set c = d. Another
+way to see this formally is that the volume of the radius r ball in d dimensions is rd V (d).
+                                     d
+The density at radius r is exactly dr  (rd Vd ) = drd−1 Vd . So, pick ρ(r) with density equal to
+drd−1 for r over [0, 1].
+
+       We have succeeded in generating a point
+                                                        x
+                                              y=ρ
+                                                       |x|
+
+uniformly at random from the unit ball by using the convenient spherical Gaussian dis-
+tribution. In the next sections, we will analyze the spherical Gaussian in more detail.
+   2
+    One might naturally ask: “how do you generate a random number from a 1-dimensional Gaussian?”
+To generate a number from any distribution given its cumulative distribution function P, first select a
+uniform random number u ∈ [0, 1] and then choose x = P −1 (u). For any a < b, the probability that x is
+between a and b is equal to the probability that u is between P (a) and P (b) which equals P (b) − P (a)
+as desired. For the 2-dimensional Gaussian,
+                                          p one can generate a point in polar coordinates by choosing
+angle θ uniform in [0, 2π] and radius r = −2 ln(u) where u is uniform random in [0, 1]. This is called
+the Box-Muller transform.
+
+
+
+
+                                                  23
+
+
+--- PAGE BREAK ---
+
+2.6    Gaussians in High Dimension
+     A 1-dimensional Gaussian has its mass close to the origin. However, as the dimension
+is increased something different happens. The d-dimensional spherical Gaussian with zero
+mean and variance σ 2 in each coordinate has density function
+                                         1           
+                                                         |x|2
+                                                              
+                              p(x) =             exp   − 2σ 2
+                                                                .
+                                     (2π)d/2 σ d
+
+The value of the density is maximum at the origin, but there is very little volume there.
+When σ 2 = 1, integrating the probability density over a unit ball centered at the origin
+yields almost zero mass since the volume of √  such a ball is negligible. In fact, one needs
+to increase the radius of the ball to nearly d before there is a significant volume √ and
+hence significant probability mass. If one increases the radius much beyond d, the
+integral barely increases even though the volume increases since the probability density
+is dropping off at a much higher rate. The following theorem formally states√    that nearly
+all the probability is concentrated in a thin annulus of width O(1) at radius d.
+
+Theorem 2.9 (Gaussian Annulus Theorem) √         For a d-dimensional spherical Gaussian
+                                                                          2
+                                      for any β ≤ d,√all but at most 3e−cβ of the prob-
+with unit variance in each direction, √
+ability mass lies within the annulus d − β ≤ |x| ≤ d + β, where c is a fixed positive
+constant.
+                                                      d
+For a high-level intuition, note that E(|x|2 ) =            E(x2i ) = dE(x21 ) = d, so the mean
+                                                      P
+                                                      i=1
+squared distance of a point from the center is d. The Gaussian Annulus Theorem says
+that the points are
+                 √ tightly concentrated. We call the square root of the mean squared
+distance, namely d, the radius of the Gaussian.
+
+   To prove the Gaussian Annulus Theorem we make use of a tail inequality for sums of
+independent random variables of bounded moments (Theorem 12.5).
+
+Proof (Gaussian Annulus Theorem): Let x = (x1 , x2 , . . . , xd ) be √ a point selected
+from a unit variance Gaussian√centered at the √
+√                                              origin, and let r = |x|. d − β ≤ |x| ≤
+  d+√  β is equivalent to |r − d|
+                               √  ≥ β. If
+                                       √  |r −  d| ≥ β, then multiplying both sides by
+                2
+r + d gives√|r − d| ≥ β(r + d) ≥ β d. So, it suffices to bound the probability that
+|r2 − d| ≥ β d.
+
+    Rewrite r2 − d = (x21 + . . . + x2d ) − d = (x21 − 1) + . . . + (x2d − 1) and perform a change
+                                                                                               √
+of variables: yi = x2i − 1. We want to bound the probability that |y1 + . . . + yd | ≥ β d.
+Notice that E(yi ) = E(x2i ) − 1 = 0. To apply Theorem 12.5, we need to bound the sth
+moments of yi .
+
+
+
+
+                                               24
+
+
+--- PAGE BREAK ---
+
+   For |xi | ≤ 1, |yi |s ≤ 1 and for |xi | ≥ 1, |yi |s ≤ |xi |2s . Thus
+                        |E(yis )| = E(|yi |s ) ≤ E(1 + x2s            2s
+                                                         i ) = 1 + E(xi )
+                                        r Z ∞
+                                             2            2
+                                  =1+              x2s e−x /2 dx
+                                            π 0
+Using the substitution 2z = x2 ,
+                                                     Z ∞
+                                              1
+                             |E(yis )| = 1 + √             2s z s−(1/2) e−z dz
+                                                 π    0
+                                      ≤ 2s s!.
+The last inequality is from the Gamma integral.
+
+    Since E(yi ) = 0, V ar(yi ) = E(yi2 ) ≤ 22 2 = 8. Unfortunately, we do not have |E(yis )| ≤
+8s! as required in Theorem 12.5. To fix this problem, perform one more change of variables,
+using wi = yi /2. Then, V ar(wi ) ≤ 2√and |E(wis )| ≤ 2s!, and our goal is now to bound the
+probability that |w1 + . . . + wd | ≥ β 2 d . Applying Theorem 12.5 where σ 2 = 2 and n = d,
+                                                                 β2
+this occurs with probability less than or equal to 3e− 96 .
+
+   In the next sections we will see several uses of the Gaussian Annulus Theorem.
+
+2.7    Random Projection and Johnson-Lindenstrauss Lemma
+    One of the most frequently used subroutines in tasks involving high dimensional data
+is nearest neighbor search. In nearest neighbor search we are given a database of n points
+in Rd where n and d are usually large. The database can be preprocessed and stored in
+an efficient data structure. Thereafter, we are presented “query” points in Rd and are
+asked to find the nearest or approximately nearest database point to the query point.
+Since the number of queries is often large, the time to answer each query should be very
+small, ideally a small function of log n and log d, whereas preprocessing time could be
+larger, namely a polynomial function of n and d. For this and other problems, dimension
+reduction, where one projects the database points to a k-dimensional space with k  d
+(usually dependent on log d) can be very useful so long as the relative distances between
+points are approximately preserved. We will see using the Gaussian Annulus Theorem
+that such a projection indeed exists and is simple.
+
+   The projection f : Rd → Rk that we will examine (many related projections are
+known to work as well) is the following. Pick k Gaussian vectors u1 , u2 , . . . , uk in Rd
+with unit-variance coordinates. For any vector v, define the projection f (v) by:
+                               f (v) = (u1 · v, u2 · v, . . . , uk · v).
+The projection f (v) is the vector√of dot products of v with the ui . We will show that
+with high probability, |f (v)| ≈ k|v|. For any two vectors v1 and v2 , f (v1 − v2 ) =
+
+                                                     25
+
+
+--- PAGE BREAK ---
+
+f (v1 ) − f (v2 ). Thus, to estimate the distance |v1 − v2 | between two vectors v1 and v2 in
+Rd , it suffices√to compute |f (v1 ) − f (v2 )| = |f (v1 − v2 )| in the k-dimensional space since
+the factor of k is known and one can divide by it. The reason distances increase when
+we project to a lower dimensional space is that the vectors ui are not unit length. Also
+notice that the vectors ui are not orthogonal. If we had required them to be orthogonal,
+we would have lost statistical independence.
+
+Theorem 2.10 (The Random Projection Theorem) Let v be a fixed vector in Rd
+and let f be defined as above. There exists constant c > 0 such that for ε ∈ (0, 1),
+                                     √           √               2
+                     Prob |f (v)| − k|v| ≥ ε k|v| ≤ 3e−ckε ,
+
+where the probability is taken over the random draws of vectors ui used to construct f .
+
+Proof: By scaling both sides of the inner inequality by |v|, we may assume that |v| = 1.
+The sum of independent normally distributed real variables is also normally distributed
+where thePmean    and variance are the sums of the individual means and variances. Since
+           d
+ui · v = j=1 uij vj , the random variable ui · v has Gaussian density with zero mean and
+unit variance, in particular,
+                                    d
+                                             !    d                  d
+                                   X             X                   X
+                                                      2
+              V ar(ui · v) = V ar      uij vj =      vj V ar(uij ) =   vj2 = 1
+                                      j=1            j=1                j=1
+
+
+Since u1 ·v, u2 ·v, . . . , uk ·v are independent Gaussian random variables, f (v) is a random
+vector from a k-dimensional spherical Gaussian with unit variance in each coordinate, and
+so the theorem follows from the Gaussian Annulus Theorem (Theorem 2.9) with d replaced
+by k.
+
+   The random projection theorem establishes that the probability of the length of the
+projection of a single vector differing significantly from its expected value is exponentially
+small in k, the dimension of the target subspace. By a union bound, the probability that
+any of O(n2 ) pairwise differences |vi − vj | among n vectors v1 , . . . , vn differs significantly
+from their expected values is small, provided k ≥ cε32 ln n. Thus, this random projection
+preserves all relative pairwise distances between points in a set of n points with high
+probability. This is the content of the Johnson-Lindenstrauss Lemma.
+
+Theorem 2.11 (Johnson-Lindenstrauss Lemma) For any 0 < ε < 1 and any integer
+n, let k ≥ cε32 ln n with c as in Theorem 2.9. For any set of n points in Rd , the random
+projection f : Rd → Rk defined above has the property that for all pairs of points vi and
+vj , with probability at least 1 − 3/2n,
+                        √                                            √
+                 (1 − ε) k |vi − vj | ≤ |f (vi ) − f (vj )| ≤ (1 + ε) k |vi − vj | .
+
+
+
+                                                26
+
+
+--- PAGE BREAK ---
+
+Proof: Applying the Random Projection Theorem (Theorem 2.10), for any fixed vi and
+vj , the probability that |f (vi − vj )| is outside the range
+                           h       √                     √          i
+                            (1 − ε) k|vi − vj |, (1 + ε) k|vi − vj |
+                 2
+is at most 3e−ckε ≤ 3/n3 for k ≥ 3cεln2n . Since there are n2 < n2 /2 pairs of points, by the
+                                                             
+                                                                                  3
+union bound, the probability that any pair has a large distortion is less than 2n   .
+
+Remark: It is important to note that the conclusion of Theorem 2.11 asserts for all vi
+and vj , not just for most of them. The weaker assertion for most vi and vj is typically less
+useful, since our algorithm for a problem such as nearest-neighbor search might return
+one of the bad pairs of points. A remarkable aspect of the theorem is that the number
+of dimensions in the projection is only dependent logarithmically on n. Since k is often
+much less than d, this is called a dimension reduction technique. In applications, the
+dominant term is typically the 1/ε2 term.
+
+    For the nearest neighbor problem, if the database has n1 points and n2 queries are
+expected during the lifetime of the algorithm, take n = n1 + n2 and project the database
+to a random k-dimensional space, for k as in Theorem 2.11. On receiving a query, project
+the query to the same subspace and compute nearby database points. The Johnson
+Lindenstrauss Lemma says that with high probability this will yield the right answer
+whatever the query. Note that the exponentially small in k probability was useful here in
+making k only dependent on ln n, rather than n.
+
+2.8    Separating Gaussians
+Mixtures of Gaussians are often used to model heterogeneous data coming from multiple
+sources. For example, suppose we are recording the heights of individuals age 20-30 in a
+city. We know that on average, men tend to be taller than women, so a natural model
+would be a Gaussian mixture model p(x) = w1 p1 (x) + w2 p2 (x), where p1 (x) is a Gaussian
+density representing the typical heights of women, p2 (x) is a Gaussian density represent-
+ing the typical heights of men, and w1 and w2 are the mixture weights representing the
+proportion of women and men in the city. The parameter estimation problem for a mixture
+model is the problem: given access to samples from the overall density p (e.g., heights of
+people in the city, but without being told whether the person with that height is male
+or female), reconstruct the parameters for the distribution (e.g., good approximations to
+the means and variances of p1 and p2 , as well as the mixture weights).
+
+    There are taller women and shorter men, so even if one solved the parameter estima-
+tion problem for heights perfectly, given a data point, one couldn’t necessarily tell which
+population it came from. That is, given a height, one couldn’t necessarily tell if it came
+from a man or a woman. In this section, we will look at a problem that is in some ways
+easier and some ways harder than this problem of heights. It will be harder in that we
+will be interested in a mixture of two Gaussians in high-dimensions as opposed to the
+
+                                             27
+
+
+--- PAGE BREAK ---
+
+                                                                ∆                      √
+                                               x                                  z      2d
+                         √                                 √                             y
+           √              2d              √                    ∆2 + 2d
+               d                           d
+                     √
+                         d                     p                ∆                 q
+
+
+
+               (a)                                              (b)
+
+
+Figure 2.5: (a) indicates that two randomly chosen points in high dimension are surely
+almost nearly orthogonal. (b) indicates the distance between a pair of random points
+from two different unit balls approximating the annuli of two Gaussians.
+
+
+d = 1 case of heights. But it will be easier in that we will assume the means are quite
+well-separated compared to the variances. Specifically, our focus will be on a mixture of
+two spherical unit-variance Gaussians whose means are separated by a distance Ω(d1/4 ).
+We will show that at this level of separation, we can with high probability uniquely de-
+termine which Gaussian each data point came from. The algorithm to do so will actually
+be quite simple. Calculate the distance between all pairs of points. Points whose distance
+apart is smaller are from the same Gaussian, whereas points whose distance is larger are
+from different Gaussians. Later, we will see that with more sophisticated algorithms, even
+a separation of Ω(1) suffices.
+
+    First, consider just one spherical unit-variance Gaussian centered at the origin. From    √
+Theorem 2.9, most     of   its probability mass   lies on an annulus of width O(1)  at radius   d.
+       −|x|2 /2
+                 Q −x2 /2
+Also e          = ie     i     and almost all of the mass is within the slab { x | −c ≤ x1 ≤ c },
+for c ∈ O(1). Pick a point x from this Gaussian. After picking x, rotate the coordinate
+system to make the first axis align with x. Independently pick a second point y from
+this Gaussian. The fact that almost all of the probability mass of the Gaussian is within
+the slab {x | − c ≤ x1 ≤ c, c ∈ O(1)} at the equator implies that y’s component along
+x’s directionp is O(1) with high probability. Thus, y is nearly perpendicular to x. So,
+|x − y| ≈ |x|2 + |y|2 . See Figure 2.5(a). More precisely,      √ since the coordinate system
+has been rotated so that x is at the North Pole, x = ( d ± O(1), 0, . . . , 0). Since y is
+almost on the equator, further rotate the coordinate system so that the component of
+y that is perpendicular
+              √               to the axis of the North Pole is in the second coordinate. Then
+y = (O(1), d ± O(1), 0, . . . , 0). Thus,
+                                           √               √              √
+                     (x − y)2 = d ± O( d) + d ± O( d) = 2d ± O( d)
+                 √
+and |x − y| = 2d ± O(1) with high probability.
+
+
+
+                                                   28
+
+
+--- PAGE BREAK ---
+
+    Consider two spherical unit variance Gaussians with centers p and q separated by a
+distance ∆. The distance between a randomly chosen point   √ x from the first Gaussian
+and a randomly chosen point y from the second is close to ∆2 + 2d, since x − p, p − q,
+and q − y are nearly mutually perpendicular. Pick x and rotate the coordinate system
+so that x is at the North Pole. Let z be the North Pole of the ball approximating the
+second Gaussian. Now pick y. Most of the mass of the second Gaussian is within O(1)
+of the equator perpendicular to z − q. Also, most of the mass of each Gaussian is within
+distance O(1) of the respective equators perpendicular to the line q − p. See Figure 2.5
+(b). Thus,
+
+                               |x − y|2 ≈ ∆2 + |z − q|2 + |q − y|2
+                                                        √
+                                        = ∆2 + 2d ± O( d).
+
+    To ensure that two points picked from the same Gaussian are closer to each other
+than two points picked from different Gaussians requires that the upper limit of the
+distance between a pair of points from the same Gaussian is at most the   √ lower limit
+of
+√ distance between points√from different  Gaussians. This requires that 2d + O(1) ≤
+   2d + ∆2 −O(1) or 2d+O( d) ≤ 2d+∆2 , which holds when ∆ ∈ ω(d1/4 ). Thus, mixtures
+of spherical Gaussians can be separated in this way, provided their centers are separated
+by ω(d1/4 ). If we have n points and want to correctly separate all of them with high
+probability, we need our individual high-probability statements to hold with√probability
+1 − 1/poly(n),3 which means our√ O(1) terms from Theorem 2.9 become O( log n). So
+we need to include an extra O( log n) term in the separation distance.
+
+        Algorithm for separating points from two Gaussians: Calculate all
+        pairwise distances between points. The cluster of smallest pairwise distances
+        must come from a single Gaussian. Remove these points. The remaining
+        points come from the second Gaussian.
+
+One can actually separate Gaussians where the centers are much closer. In the next
+chapter we will use singular value decomposition to separate points from a mixture of two
+Gaussians when their centers are separated by a distance O(1).
+
+2.9       Fitting a Spherical Gaussian to Data
+   Given a set of sample points, x1 , x2 , . . . , xn , in a d-dimensional space, we wish to find
+the spherical Gaussian that best fits the points. Let f be the unknown Gaussian with
+mean µ and variance σ 2 in each direction. The probability density for picking these points
+when sampling according to f is given by
+                                                                             !
+                             (x1 − µ)2 + (x2 − µ)2 + · · · + (xn − µ)2
+                  c exp −
+                                                       2σ 2
+  3
+      poly(n) means bounded by a polynomial in n.
+
+
+                                                    29
+
+
+--- PAGE BREAK ---
+
+                                                                 n
+                                                                 Z
+                                                                          |x−µ|2
+                                                                      −
+where the normalizing constant c is the reciprocal of e      dx . In integrating from
+                                                                            2σ 2
+
+                                                        Z          −n
+                                                             |x|2
+                                                            − 2
+−∞ to ∞, one can shift the origin to µ and thus c is       e 2σ dx      = 1 n2 and is
+                                                                                     (2π)
+independent of µ.
+
+   The Maximum Likelihood Estimator (MLE) of f, given the samples x1 , x2 , . . . , xn , is
+the f that maximizes the above probability density.
+
+Lemma 2.12 Let {x1 , x2 , . . . , xn } be a set of n d-dimensional points. Then (x1 − µ)2 +
+(x2 − µ)2 +· · ·+(xn − µ)2 is minimized when µ is the centroid of the points x1 , x2 , . . . , xn ,
+namely µ = n1 (x1 + x2 + · · · + xn ).
+
+Proof: Setting the gradient of (x1 − µ)2 + (x2 − µ)2 + · · · + (xn − µ)2 with respect to µ
+to zero yields
+                   −2 (x1 − µ) − 2 (x2 − µ) − · · · − 2 (xn − µ) = 0.
+Solving for µ gives µ = n1 (x1 + x2 + · · · + xn ).
+
+   To determine the maximum likelihood estimate of σ 2 for f , set µ to the true centroid.
+Next, show that σ is set to the standard deviation of the sample. Substitute ν = 2σ1 2 and
+a = (x1 − µ)2 + (x2 − µ)2 + · · · + (xn − µ)2 into the formula for the probability of picking
+the points x1 , x2 , . . . , xn . This gives
+
+                                               e−aν
+                                                         n .
+                                          R
+                                              e−x2 ν dx
+                                          x
+
+Now, a is fixed and ν is to be determined. Taking logs, the expression to maximize is
+                                                     
+                                            Z
+                                                   2
+                                −aν − n ln  e−νx dx .
+                                                     x
+
+To find the maximum, differentiate with respect to ν, set the derivative to zero, and solve
+for σ. The derivative is                 R 2 −νx2
+                                           |x| e   dx
+                                         x
+                                 −a + n R −νx2         .
+                                             e    dx
+                                                 x
+             √
+Setting y = | νx| in the derivative, yields
+                                                            2
+                                                y 2 e−y dy
+                                                 R
+                                           n y
+                                      −a +     R           .
+                                           ν     e−y2 dy
+                                                     y
+
+
+                                                 30
+
+
+--- PAGE BREAK ---
+
+Since the ratio of the two integrals is the expected distance squared of a d-dimensional
+spherical Gaussian of standard deviation √12 to its center, and this is known to be d2 , we
+get −a + nd
+          2ν
+                                     1
+             . Substituting σ 2 for 2ν
+                                     √
+                                         gives −a + ndσ 2 . Setting −a + ndσ 2 = 0 shows that
+                                       a
+the maximum occurs when σ = √nd           . Note that this quantity is the square root of the
+average coordinate distance squared of the samples to their mean, which is the standard
+deviation of the sample. Thus, we get the following lemma.
+
+Lemma 2.13 The maximum likelihood spherical Gaussian for a set of samples is the
+Gaussian with center equal to the sample mean and standard deviation equal to the stan-
+dard deviation of the sample from the true mean.
+
+    Let x1 , x2 , . . . , xn be a sample of points generated by a Gaussian probability distri-
+bution. Then µ = n1 (x1 + x2 + · · · + xn ) is an unbiased estimator of the expected value
+of the distribution. However, if in estimating the variance from the sample set, we use
+the estimate of the expected value rather than the true expected value, we will not get
+an unbiased estimate of the variance, since the sample mean is not independent of the
+                                         1
+sample set. One should use µ̃ = n−1         (x1 + x2 + · · · + xn ) when estimating the variance.
+See Section 12.4.10 of the appendix.
+
+2.10     Bibliographic Notes
+   The word vector model was introduced by Salton [SWY75]. There is vast literature on
+the Gaussian distribution, its properties, drawing samples according to it, etc. The reader
+can choose the level and depth according to his/her background. The Master Tail Bounds
+theorem and the derivation of Chernoff and other inequalities from it are from [Kan09].
+The original proof of the Random Projection Theorem by Johnson and Lindenstrauss was
+complicated. Several authors used Gaussians to simplify the proof. The proof here is due
+to Dasgupta and Gupta [DG99]. See [Vem04] for details and applications of the theorem.
+[MU05] and [MR95b] are text books covering much of the material touched upon here.
+
+
+
+
+                                               31
+
+
+--- PAGE BREAK ---
+
+2.11     Exercises
+Exercise 2.1
+  1. Let x and y be independent random variables with uniform distribution in [0, 1].
+     What is the expected value E(x), E(x2 ), E(x − y), E(xy), and E(x − y)2 ?
+
+  2. Let x and y be independent random variables with uniform distribution in [− 21 , 12 ].
+     What is the expected value E(x), E(x2 ), E(x − y), E(xy), and E(x − y)2 ?
+
+  3. What is the expected squared distance between two points generated at random inside
+     a unit d-dimensional cube?
+
+Exercise 2.2 Randomly generate 30 points inside the cube [− 21 , 12 ]100 and plot distance
+between points and the angle between the vectors from the origin to the points for all pairs
+of points.
+
+Exercise 2.3 Show that for any a ≥ 1 there exist distributions for which Markov’s in-
+equality is tight by showing the following:
+  1. For each a = 2, 3, and 4 give a probability
+                                        E(x) distribution p(x) for a non-negative
+     random variable x where Prob x ≥ a = a .
+
+  2. For arbitrary a ≥ 1 give
+                           aE(x)
+                              probability distribution for a non-negative random variable
+     x where Prob x ≥ a = a .
+
+Exercise 2.4 Show that for any c ≥ 1 there exist distributions for which Chebyshev’s
+inequality is tight, in other words, P rob(|x − E(x)| ≥ c) = V ar(x)/c2 .
+
+Exercise 2.5 Let x be a random variable with probability density 41 for 0 ≤ x ≤ 4 and
+zero elsewhere.
+  1. Use Markov’s inequality to bound the probability that x ≥ 3.
+
+  2. Make use of Prob(|x| ≥ a) = Prob(x2 ≥ a2 ) to get a tighter bound.
+
+  3. What is the bound using Prob(|x| ≥ a) = Prob(xr ≥ ar )?
+
+Exercise 2.6 Consider the probability distribution p(x = 0) = 1 − a1 and p(x = a) = a1 .
+Plot the probability that x is greater than or equal to a as a function of a for the bound
+given by Markov’s inequality and by Markov’s inequality applied to x2 and x4 .
+
+Exercise 2.7 Consider the probability density function p(x) = 0 for x < 1 and p(x) = c x14
+for x ≥ 1.
+  1. What should c be to make p a legal probability density function?
+
+  2. Generate 100 random samples from this distribution. How close is the average of
+     the samples to the expected value of x?
+
+                                            32
+
+
+--- PAGE BREAK ---
+
+Exercise 2.8 Let U be a set of integers and X and Y be subsets of U whose symmetric
+difference X∆Y is 1/10 of U. Prove that the probability that none of the elements selected
+at random from U will be in X∆Y is less than e−0.1n .
+
+Exercise 2.9 Let G be a d-dimensional spherical Gaussian with variance 21 in each di-
+rection, centered at the origin. Derive the expected squared distance to the origin.
+
+Exercise 2.10 Consider drawing a random point x on the surface of the unit sphere in
+Rd . What is the variance of x1 (the first coordinate of x)? See if you can give an argument
+without doing any integrals.
+
+Exercise 2.11 How large must ε be for 99% of the volume of a 1000-dimensional unit-
+radius ball to lie in the shell of ε-thickness at the surface of the ball?
+
+Exercise 2.12 Prove that 1 + x ≤ ex for all real x. For what values of x is the approxi-
+mation 1 + x ≈ ex within 0.01?
+
+Exercise 2.13 For what value of d does the volume, V (d), of a d-dimensional unit ball
+take on its maximum? Hint: Consider the ratio V V(d−1)
+                                                  (d)
+                                                       .
+
+Exercise 2.14 A 3-dimensional cube has vertices, edges, and faces. In a d-dimensional
+cube, these components are called faces. A vertex is a 0-dimensional face, an edge a
+1-dimensional face, etc.
+
+  1. For 0 ≤ k ≤ d, how many k-dimensional faces does a d-dimensional cube have?
+
+  2. What is the total number of faces of all dimensions? The d-dimensional face is the
+     cube itself which you can include in your count.
+
+  3. What is the surface area of a unit cube in d-dimensions (a unit cube has side-length
+     equal to 1 in each dimension)?
+
+  4. What is the surface area of the cube if the length of each side was 2?
+
+  5. Prove that the volume of a unit cube is close to its surface.
+
+Exercise 2.15 Consider the portion of the surface area of a unit radius, 3-dimensional
+ball with center at the origin that lies within a circular cone whose vertex is at the origin.
+What is the formula for the incremental unit of area when using polar coordinates to
+integrate the portion of the surface area of the ball that is lying inside the circular cone?
+What is the formula for the integral? What is the value of the integral if the angle of the
+cone is 36◦ ? The angle of the cone is measured from the axis of the cone to a ray on the
+surface of the cone.
+
+
+
+
+                                             33
+
+
+--- PAGE BREAK ---
+
+Exercise 2.16 Consider a unit radius, circular cylinder in 3-dimensions of height one.
+The top of the cylinder could be an horizontal plane or half of a circular ball. Consider
+these two possibilities for a unit radius, circular cylinder in 4-dimensions. In 4-dimensions
+the horizontal plane is 3-dimensional and the half circular ball is 4-dimensional. In each
+of the two cases, what is the surface area of the top face of the cylinder? You can use
+V (d) for the volume of a unit radius, d-dimension ball and A(d) for the surface area of
+a unit radius, d-dimensional ball. An infinite length, unit radius, circular cylinder in 4-
+dimensions would be the set {(x1 , x2 , x3 , x4 )|x22 + x23 + x24 ≤ 1} where the coordinate x1 is
+the axis.
+
+Exercise 2.17 Given a d-dimensional circular cylinder of radius r and height h
+
+  1. What is the surface area in terms of V (d) and A(d)?
+
+  2. What is the volume?
+
+Exercise 2.18 How does the volume of a ball of radius two behave as the dimension of
+the space increases? What if the radius was larger than two but a constant independent
+of d? What function of d would the radius need to be for a ball of radius r to have
+approximately constant volume as the dimension increases? Hint: you may want to use
+                                 n
+Stirling’s approximation, n! ≈ ne , for factorial.
+
+Exercise 2.19 If lim V (d) = 0, the volume of a d-dimensional ball for sufficiently large
+                    d→∞
+d must be less than V (3). How can this be if the d-dimensional ball contains the three
+dimensional ball?
+
+Exercise 2.20
+
+  1. Write a recurrence relation for V (d) in terms of V (d − 1) by integrating over x1 .
+     Hint: At x1 = t, the (d − 1)-dimensional
+                                         √       volume of the slice is the volume of a
+     (d − 1)-dimensional sphere of radius 1 − t2 . Express this in terms of V (d − 1) and
+     write down the integral. You need not evaluate the integral.
+
+  2. Verify the formula for d = 2 and d = 3 by integrating and comparing with V (2) = π
+     and V (3) = 43 π
+
+Exercise 2.21 Consider a unit ball A centered at the origin and a unit ball B whose
+center is at distance s from the origin. Suppose that a random point x is drawn from
+the mixture distribution: “with probability 1/2, draw at random√ from A; with probability
+1/2, draw at random from B”. Show that a separation s  1/ d − 1 is sufficient√    so that
+Prob(x ∈ A ∩ B) = o(1); i.e., for any  > 0 there exists c such that if s ≥ c/ d − 1, then
+Prob(x ∈ A ∩ B) < . In other words, this extent of separation means that nearly all of
+the mixture distribution is identifiable.
+
+
+
+                                               34
+
+
+--- PAGE BREAK ---
+
+Exercise 2.22 Consider the upper hemisphere of a unit-radius ball in d-dimensions.
+What is the height of the maximum volume cylinder that can be placed entirely inside
+the hemisphere? As you increase the height of the cylinder, you need to reduce the cylin-
+der’s radius so that it will lie entirely within the hemisphere.
+
+Exercise 2.23 What is the volume of the maximum size d-dimensional hypercube that
+can be placed entirely inside a unit radius d-dimensional ball?
+
+Exercise 2.24 Calculate the ratio of area above the plane x1 =  to the area of the upper
+hemisphere of a unit radius ball in d-dimensions for  = 0.001, 0.01, 0.02, 0.03, 0.04, 0.05
+and for d = 100 and d = 1, 000.
+
+Exercise 2.25 Almost all of the volume of a ball in high dimensions lies in a narrow
+slice of the ball at the equator. However, the narrow slice is determined by the point on
+the surface of the ball that is designated the North Pole. Explain how this can be true
+if several different locations are selected for the location of the North Pole giving rise to
+different equators.
+
+Exercise 2.26 Explain how the volume of a ball in high dimensions can simultaneously
+be in a narrow slice at the equator and also be concentrated in a narrow annulus at the
+surface of the ball.
+
+Exercise 2.27 Generate 500 points uniformly at random on the surface of a unit-radius
+ball in 50 dimensions. Then randomly generate five additional points. For each of the five
+new points, calculate a narrow band of width √250 at the equator, assuming the point was
+the North Pole. How many of the 500 points are in each band corresponding to one of the
+five equators? How many of the points are in all five bands? How wide do the bands need
+to be for all points to be in all five bands?
+
+Exercise 2.28 Place 100 points at random on a d-dimensional unit-radius ball. Assume
+d is large. Pick a random vector and let it define two parallel hyperplanes on opposite
+sides of the origin that are equal distance from the origin. How close can the hyperplanes
+be moved and still have at least a .99 probability that all of the 100 points land between
+them?
+
+Exercise 2.29 Let x and y be d-dimensional zero mean, unit variance Gaussian vectors.
+Prove that x and y are almost orthogonal by considering their dot product.
+
+Exercise 2.30 Prove that with high probability, the angle between two random vectors in
+a high-dimensional space is at least 45◦ . Hint: use Theorem 2.8.
+                                                                        √
+Exercise 2.31 Project the volume of a d-dimensional ball of radius d onto a line
+through the center. For large d, give an intuitive argument that the projected volume
+should behave like a Gaussian.
+
+
+                                             35
+
+
+--- PAGE BREAK ---
+
+Exercise 2.32
+
+  1. Write a computer program that generates n points uniformly distributed over the
+     surface of a unit-radius d-dimensional ball.
+
+  2. Generate 200 points on the surface of a sphere in 50 dimensions.
+
+  3. Create several random lines through the origin and project the points onto each line.
+     Plot the distribution of points on each line.
+
+  4. What does your result from (3) say about the surface area of the sphere in relation
+     to the lines, i.e., where is the surface area concentrated relative to each line?
+
+Exercise 2.33 If one generates points in d-dimensions with each coordinate a unit vari-
+                                                                                     √
+ance Gaussian, the points will approximately lie on the surface of a sphere of radius d.
+
+  1. What is the distribution when the points are projected onto a random line through
+     the origin?
+
+  2. If one uses a Gaussian with variance four, where in d-space will the points lie?
+
+Exercise 2.34 Randomly generate a 100 points on the surface of a sphere in 3-dimensions
+and in 100-dimensions. Create a histogram of all distances between the pairs of points in
+both cases.
+
+Exercise 2.35 We have claimed that a randomly generated point on a ball lies near the
+equator of the ball, independent of the point picked to be the North Pole. Is the same claim
+true for a randomly generated point on a cube? To test this claim, randomly generate ten
+±1 valued vectors in 128 dimensions. Think of these ten vectors as ten choices for the
+North Pole. Then generate some additional ±1 valued vectors. To how many of the
+original vectors is each of the new vectors close to being perpendicular; that is, how many
+of the equators is each new vector close to?
+
+Exercise
+ d      2.36 Define the equator of a d-dimensional unit cube to be the hyperplane
+      xi = d2 .
+   P
+ x
+    i=1
+
+  1. Are the vertices of a unit cube concentrated close to the equator?
+
+  2. Is the volume of a unit cube concentrated close to the equator?
+
+  3. Is the surface area of a unit cube concentrated close to the equator?
+
+Exercise 2.37 Consider a non-orthogonal basis e1 , e2 , . . . , ed . The ei are a set of linearly
+independent unit vectors that span the space.
+
+  1. Prove that the representation of any vector in this basis is unique.
+
+                                               36
+
+
+--- PAGE BREAK ---
+
+                                             √
+  2. Calculate the squared
+                         √ √
+                             length of z = ( 22 , 1)e where z is expressed in the basis e1 =
+     (1, 0) and e2 = (− 22 , 22 )
+              P                   P
+  3. If y = i ai ei and z = i bi ei , with 0 < ai < bi , is it necessarily true that the
+     length of z is greater than the length of y? Why or why not?
+                                                   √    √
+  4. Consider the basis e1 = (1, 0) and e2 = (− 22 , 22 ).
+
+       (a) What is the representation of the vector (0,1) in the basis (e1 , e2 ).
+                                                        √   √
+       (b) What is the representation of the vector ( 22 , 22 )?
+       (c) What is the representation of the vector (1, 2)?
+
+
+
+
+  e2                           e2                               e2
+
+
+                      e1                           e1                            e1
+
+
+
+
+Exercise 2.38 Generate 20 points uniformly at random on a 900-dimensional sphere of
+radius 30. Calculate the distance between each pair of points. Then, select a method of
+projection and project the data onto√subspaces of dimension k=100, 50, 10, 5, 4, 3, 2, 1
+and calculate the difference between k times the original distances and the new√pair-wise
+distances. For each value of k what is the maximum difference as a percent of k.
+
+Exercise 2.39 What happens in high dimension to a lower dimensional manifold? To
+see what happens, consider a sphere of dimension 100 in a 1,000 dimensional space when
+the 1,000 dimensional space is projected to a random 500 dimensional space. Will the
+sphere remain essentially spherical? Given an intuitive argument justifying your answer.
+
+Exercise 2.40 In d-dimensions there are exactly d-unit vectors that are pairwise orthog-
+onal. However, if you wanted a set of vectors that were almost orthogonal you might
+squeeze in a few more. For example, in 2-dimensions if almost orthogonal meant at least
+45 degrees apart, you could fit in three almost orthogonal vectors. Suppose you wanted to
+find 1000 almost orthogonal vectors in 100 dimensions. Here are two ways you could do
+it:
+  1. Begin with 1,000 orthonormal 1,000-dimensional vectors, and then project them to
+     a random 100-dimensional space.
+
+  2. Generate 1000 100-dimensional random Gaussian vectors.
+
+                                             37
+
+
+--- PAGE BREAK ---
+
+Implement both ideas and compare them to see which does a better job.
+
+Exercise 2.41 Suppose there is an object moving at constant velocity along a straight
+line. You receive the gps coordinates corrupted by Gaussian noise every minute. How do
+you estimate the current position?
+
+Exercise 2.42
+  1. What is the maximum size rectangle that can be fitted under a unit variance Gaus-
+     sian?
+
+  2. What unit area rectangle best approximates a unit variance Gaussian if one measure
+     goodness of fit by the symmetric difference of the Gaussian and the rectangle.
+
+Exercise 2.43 Let x1 , x2 , . . . , xn be independent samples of a random variable x with
+                                            n
+mean µ and variance σ 2 . Let ms = n1
+                                           P
+                                              xi be the sample mean. Suppose one estimates
+                                       i=1
+the variance using the sample mean rather than the true mean, that is,
+                                            n
+                                        1   X
+                                  σs2 =         (xi − ms )2
+                                        n i=1
+
+Prove that E(σs2 ) = n−1
+                      n
+                         σ 2 and thus one should have divided by n − 1 rather than n.
+
+Hint: First calculate the variance
+                              Pn of the sample   mean and show that var(ms ) = n1 var(x).
+                    2       1             2
+Then calculate E(σs ) = E[ n i=1 (xi −ms ) ] by replacing xi −ms with (xi −m)−(ms −m).
+
+Exercise 2.44 Generate ten values by a Gaussian probability distribution with zero mean
+and variance one. What is the center determined by averaging the points? What is the
+variance? In estimating the variance, use both the real center and the estimated center.
+When using the estimated center to estimate the variance, use both n = 10 and n = 9.
+How do the three estimates compare?
+
+Exercise 2.45 Suppose you want to estimate the unknown center of a Gaussian in d-
+space which has variance one in each direction. Show that O(log d/ε2 ) random samples
+from the Gaussian are sufficient to get an estimate ms of the true center µ, so that with
+probability at least 99%,
+                                   kµ − ms k∞ ≤ ε.
+How many samples are sufficient to ensure that with probability at least 99%
+
+                                    kµ − ms k2 ≤ ε?
+                                                                 2
+                                                          1 (x−5)
+Exercise 2.46 Use the probability distribution 3√12π e− 2     9      to generate ten points.
+
+(a) From the ten points estimate µ. How close is the estimate of µ to the true mean of
+     5?
+
+                                             38
+
