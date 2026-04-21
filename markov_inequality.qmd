@@ -1,0 +1,448 @@
+---
+title: "Foundations of Data Science (Blum et al 2020)"
+subtitle: "2.2 Markov's Inequality"
+author: "Dan Killian"
+date: 2-1-2026
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute: 
+  keep-md: true
+  warning: false
+  message: false
+editor: visual
+reference-location: margin
+---
+
+```{r global_options, include=F, warning=F, message=F, echo=F, error=F}
+library(here)
+library(knitr)
+getwd()
+source("../prep (May 2025).r")
+```
+
+## 2.1 Markov's Inequality
+
+### 2.1.1 Application
+
+Markov's Inequality states the following:
+
+$P(X \geq a) \leq \frac{E(X)}{a}$
+
+The probability of some data point in the distribution X exceeding some threshold value $a$ cannot exceed the average of the distribution divided by $a$.
+
+When all we know about a distribution is it's mean, Markov's Inequality sets an upper bound on the probability of observing a particular value of any data point in the distribution.
+
+How might this look in practice?
+
+Let $X$ be a discrete random variable with values $x_1, x_2, \ldots, x_n$ and probabilities $p_1, p_2, \ldots, p_n$ where $X \geq 0$.
+
+```{r}
+
+x <- c(1, 2, 4, 8, 16)
+p <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+
+dis <- tibble(x=x,
+              p=p)
+
+dis %>%
+    flextable()
+```
+
+We get the expected value, or average, of the variable by summing over each value in the distribution times its weight.
+
+$$E(X) = \sum_i x_i \cdot P(X = x_i)$$ $E(X)$ = $(1)(.4) + (2)(.2) + (4)(.2) + (8)(.1) + (16)(.1)$
+
+So $E(X)$ = `r sum(x*p)`
+
+```{r}
+EX <- sum(x * p)
+```
+
+Now let's establish some arbitrary threshold $a\geq4$
+
+In this example, what is $P(X\geq a)\leq\frac{E(X)}{a}$?
+
+$P(X\geq4)\leq\frac{4}{4}\leq 1$
+
+An obvious case, because the data point is also the mean!
+
+What if $a\geq8$?
+
+$P(X\geq8)\leq\frac{4}{8}\leq.5$
+
+For a distribution with mean four, only half of all values of the distribution may exceed eight. If more than half of values in the distribution exceeded eight, it would shift the mean!
+
+$a\geq16$?
+
+$P(X\ge16)\leq\frac{4}{16}\leq.25$
+
+For a distribution of mean four, at most 25 percent of all data values may exceed 16. As soon as more than 25 percent of data values exceed four, it will shift the mean.
+
+### 2.1.2 Derivation
+
+Let's work out how we can derive Markov's Inequality, and offer additional illustrations
+
+Note how we computed $E(X)$ as the sum of all values times their weight.
+
+$$E(X) = \sum_i x_i \cdot P(X = x_i)$$
+
+Let's do that again, but this time grouping terms around our threshold $a=4$.[^1]
+
+[^1]: This is the Law of Total Expectation: $E(X) = E(X|A)P(A) + E(X|A^c)P(A^c)$
+
+$$E[X] = \sum\limits_{x_i < a} x_i \cdot P(X = x_i) + \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$ In the example we're working with, that would be
+
+$E(X) = \Big[ (1)(.4) + (2)(.2) \Big] + \Big[ (4)(.2) + (8)(.1) + (16)(.1) \Big]$
+
+We're only interested in the second part of the decomposition. What happens if we remove the first part where $a\lt 4$?
+
+Since all values of $X$ are non-negative, that means we are removing positive values from the sum. Because we are removing positive values from the sum, the result of the operation will be less than $E(X)$. Therefore, $E(X)$ will be the same as or higher than the remaining sum.
+
+This allows us to replace the equality with greater than or equal to.
+
+$$E(X) \geq \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$
+
+Returning to our example, that would be
+
+$E(X) \geq (4)(.2) + (8)(.1) + (16)(.1)$
+
+Recall that $E(X)=4$ and $E(X\geq4)=.8 + .8 + 1.6 = 3.2$
+
+$4\geq3.2$ and our inequality holds
+
+Let's go back to the generalized notation:
+
+$$E(X) \geq \sum\limits_{x_i \geq a} x_i \cdot P(X = x_i)$$
+
+Note that our remaining $x_i$ values are greater than or equal to $a$. So our inequality still holds if we replace all the $X\geq a$ with just $a$.
+
+$$E(X) \geq \sum\limits_{x_i \geq a} a \cdot P(X = x_i)$$ We're still summing over the same values where $x_i\geq a$, but now we multiply by $a$ instead of $x_i$.
+
+This is where the loosening of the bound occurs! Back to our simple example for $a=4$, what is the expected value?
+
+$x_i$ = 4: 4 \* 0.2 = 0.8\
+$x_i$ = 8: 8 \* 0.1 = 0.8\
+$x_i$ = 16: 16 \* 0.1 = 1.6
+
+Add them up: 4 \* 0.2 + 8 \* 0.1 + 16 \* 0.1 = 3.2
+
+Now we repeat that step, but use only $a$ - a lesser value:
+
+$x_i$ = 4: 4 \* 0.2 = 0.8\
+$x_i$ = 8: 4 \* 0.1 = 0.4\
+$x_i$ = 16: 4 \* 0.1 = 0.4
+
+Add them up: 4 \* 0.2 + 4 \* 0.1 + 4 \* 0.1 = 1.6
+
+We loosened the bound, in order to derive the proof.
+
+Now let's factor out the constant, based on the linearity of the summation operator.
+
+$$E(X) \geq a\cdot \sum\limits_{x_i \geq a} P(X = x_i)$$
+
+Now note that the summation of all $x_i\geq a$ is just the cumulative probability of $x\geq a$. So let's replace the summation operator with the cumulative probability.
+
+$$E(X) \geq a \cdot P(X \geq a)$$
+
+Solve for the probability to get Markov's Inequality
+
+$$P(X \geq a) \leq \frac{E(X)}{a}$$
+
+Recap:
+
+-   After establishing some arbitrary threshold $a$, we used the Law of Total Expectation to group the values of the distribution below and above the threshold.
+
+-   We dropped all terms below the threshold. In doing this, we ensure that the remaining sum is less than the expected value (because the expected value is the sum of all terms).
+
+-   Knowing that the expected value is the same as or higher than the remaining terms, we replaced the equality operator in the total expectation with a greater than or equal to operator after dropping the terms less than $a$.
+
+-   Knowing that the remaining values of $X$ are greater than or equal to $a$, we replaced the $X$ notation with $a$. This is where the loosening of the bound occurs, but it enables us to derive its proof.
+
+-   We factored the constant $a$ out of the summation operator.
+
+-   We recognized that the summation of terms above a threshold is the same thing as the cumulative probability above the threshold, so we replaced the summation operator with cumulative probability.
+
+-   We solved for $P(X\geq a)$ to be $\frac{E(X)}{a}$.
+
+And that is Markov's Inequality
+
+Let's look at a few more data illustrations
+
+```{r}
+set.seed(432)
+
+con <- tibble(x=round(rnorm(100,50, 10),0))
+e_x <- round(mean(con$x),0)
+sd <- sd(con$x)
+
+head(con) %>%
+    flextable()
+```
+
+```{r}
+describe(con) %>% flextable()
+```
+
+```{r}
+set.seed(32)
+a <- sample(con$x, 1)
+```
+
+Let's say a = `r a`
+
+$$P(x\geq`r a`)\leq\frac{`r e_x`}{`r a`}\leq `r e_x/a`$$ For context, what is the actual probability of observing 52 or more?
+
+```{r}
+mean(con$x>=a)
+```
+
+Under the Markov bound, as many as 94 percent of data values may exceed 51. In the actual data simulated from a normal distribution, 41 percent of the data values exceed 51.
+
+Now let's set values of $a$ at higher and higher quantiles[^2]
+
+[^2]: Values of $a$ at low quantiles are uninteresting because the probability is unity
+
+```{r}
+a <- quantile(con$x,
+              probs=c(.75,.9,.95,.99)) %>%
+    round(0)
+
+```
+
+```{r}
+out <- tibble(
+    quantile = names(a),
+    a=a,
+    ex_a = e_x / a,
+    actual_prob = c(
+        mean(con$x >= a[1]),  # proportion >= 75th percentile
+        mean(con$x >= a[2]),  # proportion >= 90th percentile
+        mean(con$x >= a[3]),  # proportion >= 95th percentile
+        mean(con$x >= a[4])   # proportion >= 99th percentile
+    ))
+out %>%
+    flextable()
+```
+
+The Markov bounds are much higher than the actual probabilities found in the data. There is such a gap that Markov's Inequality isn't helpful in terms of hypothesis testing. It is still used in theoretical work to set bounds and support proofs. It would probably be best to think of it this way: what is the maximum proportion of data points that may exceed a given threshold, before the mean must shift toward the threshold?
+
+Let's conclude by looking at Markov's Inequality across across several distributions:
+
+```{r}
+#| echo: false
+library(plotly)
+library(htmltools)
+
+thresholds_app <- seq(0.5, 20, by = 0.5)
+dists_app      <- c("Discrete", "Normal", "Uniform", "Exponential", "Poisson", "Gamma")
+EX_app         <- c(Discrete = 4, Normal = 5, Uniform = 5,
+                    Exponential = 5, Poisson = 5, Gamma = 5)
+
+calc_prob_app <- function(dist, a) {
+  switch(dist,
+    Discrete    = { xd <- c(1,2,4,8,16); pd <- c(0.4,0.2,0.2,0.1,0.1); sum(pd[xd >= a]) },
+    Normal      = pnorm(a, 5, 2, lower.tail = FALSE),
+    Uniform     = punif(a, 0, 10, lower.tail = FALSE),
+    Exponential = pexp(a, 0.2, lower.tail = FALSE),
+    Poisson     = ppois(a - 1, 5, lower.tail = FALSE),
+    Gamma       = pgamma(a, 2, 0.4, lower.tail = FALSE)
+  )
+}
+
+curve_data_app <- expand_grid(dist = dists_app, threshold = thresholds_app) |>
+  mutate(
+    actual = map2_dbl(dist, threshold, calc_prob_app),
+    markov = pmin(EX_app[dist] / threshold, 1)
+  )
+
+disc_x_app <- c(1, 2, 4, 8, 16)
+disc_p_app <- c(0.4, 0.2, 0.2, 0.1, 0.1)
+pois_x_app <- 0:20
+pois_p_app <- dpois(0:20, 5)
+x_cont_app <- seq(0.01, 20, length.out = 300)
+
+make_markov_plot <- function(dist) {
+  d_curve  <- curve_data_app |> filter(dist == !!dist)
+  init_a   <- 5
+  init_row <- d_curve |> filter(threshold == init_a)
+
+  steps <- lapply(thresholds_app, function(a) {
+    list(
+      method = "animate",
+      args   = list(list(as.character(a)),
+                    list(mode = "immediate",
+                         transition = list(duration = 0),
+                         frame      = list(duration = 0, redraw = FALSE))),
+      label  = as.character(a)
+    )
+  })
+
+  if (dist == "Discrete") {
+    frames <- lapply(thresholds_app, function(a) {
+      row      <- d_curve |> filter(threshold == a)
+      bar_cols <- as.list(ifelse(disc_x_app >= a, "#0067B9", "lightgray"))
+      list(name   = as.character(a),
+           data   = list(list(marker = list(color = bar_cols)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L))
+    })
+    init_col <- as.list(ifelse(disc_x_app >= init_a, "#0067B9", "lightgray"))
+    p <- plot_ly() |>
+      add_bars(x = disc_x_app, y = disc_p_app,
+               marker = list(color = init_col),
+               name = "P(X = x)", showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+
+  } else if (dist == "Poisson") {
+    frames <- lapply(thresholds_app, function(a) {
+      row      <- d_curve |> filter(threshold == a)
+      bar_cols <- as.list(ifelse(pois_x_app >= a, "#0067B9", "lightgray"))
+      list(name   = as.character(a),
+           data   = list(list(marker = list(color = bar_cols)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L))
+    })
+    init_col <- as.list(ifelse(pois_x_app >= init_a, "#0067B9", "lightgray"))
+    p <- plot_ly() |>
+      add_bars(x = pois_x_app, y = pois_p_app,
+               marker = list(color = init_col),
+               name = "P(X = x)", showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+
+  } else {
+    dens_y <- switch(dist,
+      Normal      = dnorm(x_cont_app, 5, 2),
+      Uniform     = dunif(x_cont_app, 0, 10),
+      Exponential = dexp(x_cont_app, 0.2),
+      Gamma       = dgamma(x_cont_app, 2, 0.4)
+    )
+    max_y  <- max(dens_y)
+    frames <- lapply(thresholds_app, function(a) {
+      row   <- d_curve |> filter(threshold == a)
+      below <- ifelse(x_cont_app <  a, dens_y / max_y * 0.4, NA)
+      above <- ifelse(x_cont_app >= a, dens_y / max_y * 0.4, NA)
+      list(name   = as.character(a),
+           data   = list(list(y = as.list(below)),
+                         list(y = as.list(above)),
+                         list(x = list(a), y = list(row$markov),
+                              text = list(sprintf("Markov Bound: %.3f", row$markov))),
+                         list(x = list(a), y = list(row$actual),
+                              text = list(sprintf("Actual P(X\u2265a): %.3f | Markov: %.3f | Holds: %s",
+                                                  row$actual, row$markov,
+                                                  ifelse(row$actual <= row$markov, "Yes", "No"))))),
+           traces = list(0L, 1L, 2L, 3L))
+    })
+    below_init <- ifelse(x_cont_app <  init_a, dens_y / max_y * 0.4, NA)
+    above_init <- ifelse(x_cont_app >= init_a, dens_y / max_y * 0.4, NA)
+    p <- plot_ly() |>
+      add_trace(type = "scatter", mode = "lines", x = x_cont_app, y = below_init,
+                fill = "tozeroy", fillcolor = "rgba(200,200,200,0.4)",
+                line = list(color = "lightgray", width = 1),
+                showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "lines", x = x_cont_app, y = above_init,
+                fill = "tozeroy", fillcolor = "rgba(0,103,185,0.4)",
+                line = list(color = "#0067B9", width = 1),
+                showlegend = FALSE) |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$markov),
+                marker = list(color = "#BA0C2F", size = 12, symbol = "diamond"),
+                showlegend = FALSE,
+                text = sprintf("Markov Bound: %.3f", init_row$markov), hoverinfo = "text") |>
+      add_trace(type = "scatter", mode = "markers",
+                x = list(init_a), y = list(init_row$actual),
+                marker = list(color = "#0067B9", size = 12),
+                showlegend = FALSE,
+                text = sprintf("Actual: %.3f", init_row$actual), hoverinfo = "text")
+  }
+
+  p <- p |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$threshold, y = d_curve$markov,
+              name = "Markov Bound E[X]/a",
+              line = list(color = "#BA0C2F", width = 2.5)) |>
+    add_trace(type = "scatter", mode = "lines",
+              x = d_curve$threshold, y = d_curve$actual,
+              name = "Actual P(X \u2265 a)",
+              line = list(color = "#0067B9", width = 2.5)) |>
+    layout(
+      title     = paste("Markov's Inequality \u2013", dist),
+      xaxis     = list(title = "x  /  Threshold (a)", range = c(0, 20)),
+      yaxis     = list(title = "Probability", range = c(0, 1.05)),
+      hovermode = "closest",
+      sliders   = list(list(
+        active       = which(thresholds_app == 5) - 1,
+        currentvalue = list(prefix = "a = ", font = list(size = 13)),
+        pad          = list(t = 50),
+        steps        = steps
+      ))
+    )
+
+  p$x$frames <- frames
+  p
+}
+
+plots_app <- setNames(lapply(dists_app, make_markov_plot), dists_app)
+
+tab_buttons_app <- lapply(seq_along(dists_app), function(i) {
+  d <- dists_app[i]
+  tags$button(
+    d,
+    onclick = sprintf(
+      "document.querySelectorAll('.mktab').forEach(el => el.style.display='none');
+       document.querySelectorAll('.mkbtn').forEach(el => el.classList.remove('mkactive'));
+       document.getElementById('mktab-%s').style.display='block';
+       this.classList.add('mkactive');", d),
+    class = if (i == 1) "mkbtn mkactive" else "mkbtn",
+    style = "margin:4px; padding:8px 16px; cursor:pointer; border:1px solid #ccc;
+             border-radius:4px; background:#f5f5f5; font-size:14px;"
+  )
+})
+
+tab_panels_app <- lapply(seq_along(dists_app), function(i) {
+  d <- dists_app[i]
+  tags$div(id = paste0("mktab-", d), class = "mktab",
+           style = if (i == 1) "display:block;" else "display:none;",
+           as.widget(plots_app[[d]]))
+})
+
+tagList(
+  tags$style(".mkactive { background:#0067B9 !important; color:white !important;
+                           border-color:#0067B9 !important; }
+              .mkbtn:hover { background:#e0e0e0; }"),
+  tags$div(style = "margin-bottom:8px;", tagList(tab_buttons_app)),
+  tagList(tab_panels_app)
+)
+```

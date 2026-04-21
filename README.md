@@ -1,9 +1,30 @@
 # Foundations of Data Science
+Course notes on the text Foundations of Data Science (Blum et al 2020)
 
-### course notes on the text Foundations of Data Science (Blum et al 2020)
+## High Dimensional Space
+Learning to project out of many-sided data
 
-We all need continuing self-study. Here are my course notes for the text Foundations of Data Science, by Blum et al 2020. 
+[Markov's Inequality](https)
 
-[High Dimensional Data](https://dkillian.github.io/FoundationsDataScience/Foundations%20of%20Data%20Science_ch2.html)
+[Chebyshev's Inequality](https:://)
 
-[Singular Value Decomposition](https://dkillian.github.io/FoundationsDataScience/Foundations%20of%20Data%20Science_ch3.html)
+[Law of Large Numbers](https:://)
+
+[Projection](https:://)
+
+[Separating Gaussians](https:://)
+
+## Singular Value Decomposition
+Extracting essential structure from many-sided data
+
+[Centering data](https:://)
+
+[Principal Component Analysis](https:://)
+
+[Separating Mixtures of Gaussians](https:://)
+
+[Ranking Relevance](https:://)
+
+## Random Walks Along Markov Chains
+Sampling from stationary distributions
+

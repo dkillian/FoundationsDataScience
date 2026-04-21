@@ -459,7 +459,7 @@ Chebyshev's Inequality is a direct application of Markov's Inequality.
 
 Where Markov's Inequality only requires knowing the mean of a distribution, Chebyshev's Inequality uses the variance as well, and in doing so produces a tighter bound.
 
-Chebyshev's Inequality states the following: 
+Chebyshev's Inequality states the following:
 
 $$P(|X - \mu| \geq c) \leq \frac{Var(X)}{c^2}$$
 
@@ -473,15 +473,15 @@ $|X-\mu|$ satisfies the Markov conditions that X is non-negative, so we can use 
 
 $P\big(|X - \mu| \geq c\big) \leq \frac{E\big[|X-\mu|\big]}{c}$
 
-Note further that if we square X, it still satisfies the Markov conditions, but also starts to look like a variance. 
+Note further that if we square X, it still satisfies the Markov conditions, but also starts to look like a variance.
 
 $P\Big((X - \mu)^2 \geq c^2\Big) \leq \frac{E\big[(X-\mu)^2\big]}{c^2}$
 
-Now note that $E\big[(X-\mu)^2\big]$ is the definition of variance. So we replace the numerator of the second term with $Var(X)$ and we return the first term to its absolute value: 
+Now note that $E\big[(X-\mu)^2\big]$ is the definition of variance. So we replace the numerator of the second term with $Var(X)$ and we return the first term to its absolute value:
 
 $P\big(|X - \mu| \geq c\big) \leq \frac{Var(X)}{c^2}$
 
-And that's it. A straightforward application of Markov's Inequality gives us Chebyshev's Inequality, which gives us bounds on the variance of X. 
+And that's it. A straightforward application of Markov's Inequality gives us Chebyshev's Inequality, which gives us bounds on the variance of X.
 
 There are two important features to note compared to Markov's Inequality. First, Chebyshev's bound is expressed in terms of *deviations from the mean* in either direction — it covers both tails of the distribution. Second, it requires no assumptions about the sign of $X$; it only requires that the variance $\sigma^2$ be finite.
 
@@ -718,13 +718,13 @@ As we collect more observations, the probability that the sample mean deviates f
 
 The derivation requires two preliminary results, then a direct application of Chebyshev's Inequality.
 
-**Step 1: The expected value of $\bar{X}_n$ is $\mu$.**
+**Step 1: The expected value of** $\bar{X}_n$ is $\mu$.
 
 By linearity of expectation:
 
 $$E[\bar{X}_n] = E\left[\frac{1}{n}\sum_{i=1}^n X_i\right] = \frac{1}{n}\sum_{i=1}^n E[X_i] = \frac{1}{n} \cdot n\mu = \mu$$
 
-**Step 2: The variance of $\bar{X}_n$ is $\sigma^2 / n$.**
+**Step 2: The variance of** $\bar{X}_n$ is $\sigma^2 / n$.
 
 Because the $X_i$ are independent, their variances add:
 
@@ -732,7 +732,7 @@ $$\text{Var}(\bar{X}_n) = \text{Var}\left(\frac{1}{n}\sum_{i=1}^n X_i\right) = \
 
 This is the key quantity: as $n$ grows, the variance of the sample mean shrinks proportionally.
 
-**Step 3: Apply Chebyshev's Inequality to $\bar{X}_n$.**
+**Step 3: Apply Chebyshev's Inequality to** $\bar{X}_n$.
 
 From Step 1, $E[\bar{X}_n] = \mu$. From Step 2, $\text{Var}(\bar{X}_n) = \sigma^2/n$. Chebyshev gives:
 
@@ -748,13 +748,13 @@ Since probabilities are non-negative, this forces $P(|\bar{X}_n - \mu| \geq \eps
 
 Recap:
 
-- The variance of the sample mean is $\sigma^2/n$ — it shrinks as observations accumulate. This is the engine of the result.
+-   The variance of the sample mean is $\sigma^2/n$ — it shrinks as observations accumulate. This is the engine of the result.
 
-- Chebyshev converts that shrinking variance into a shrinking probability bound. Without Chebyshev (or a similar inequality), we could not bridge from "variance → 0" to "probability of deviation → 0."
+-   Chebyshev converts that shrinking variance into a shrinking probability bound. Without Chebyshev (or a similar inequality), we could not bridge from "variance → 0" to "probability of deviation → 0."
 
-- The result holds for *any* distribution with finite mean and variance, regardless of shape. Normality is not required. The only assumption is $\sigma^2 < \infty$.
+-   The result holds for *any* distribution with finite mean and variance, regardless of shape. Normality is not required. The only assumption is $\sigma^2 < \infty$.
 
-- Markov's Inequality is the deeper foundation: Chebyshev was derived from Markov, so the LLN ultimately rests on Markov.
+-   Markov's Inequality is the deeper foundation: Chebyshev was derived from Markov, so the LLN ultimately rests on Markov.
 
 ### 2.3.3 Simulation
 
@@ -798,7 +798,7 @@ band_data <- map_dfr(names(dist_params), function(d) {
 })
 ```
 
-**Plot 1: Running means converging to $\mu$**
+**Plot 1: Running means converging to** $\mu$
 
 Each blue line is one simulated replication of $\bar{X}_n$ as $n$ grows. The red band is the Chebyshev $\pm 2\sigma/\sqrt{n}$ envelope, within which at least 75% of paths must fall at every $n$.
 
@@ -966,7 +966,7 @@ ggplot(bounds_long, aes(x = delta, y = probability, color = method, linetype = m
 
 The derivation rests on a single idea: $e^{tX}$ is a non-negative random variable, so Markov's Inequality applies to it.
 
-**Step 1: Apply Markov to $e^{tX}$.**
+**Step 1: Apply Markov to** $e^{tX}$.
 
 For any $t > 0$ and threshold $a$:
 
@@ -974,7 +974,7 @@ $$P(X \geq a) = P\big(e^{tX} \geq e^{ta}\big) \leq \frac{E\big[e^{tX}\big]}{e^{t
 
 where $M_X(t) = E[e^{tX}]$ is the moment generating function. This is valid for any $t > 0$ because $e^{tX}$ is non-negative.
 
-**Step 2: Optimize over $t$.**
+**Step 2: Optimize over** $t$.
 
 Since the bound holds for *all* $t > 0$, we take the minimum:
 
@@ -1002,10 +1002,10 @@ $$P(S_n \geq (1+\delta)\mu) \leq e^{-\mu\delta^2/3}$$
 
 Recap:
 
-- The pivotal move is applying Markov to $e^{tX}$ rather than to $X$ or $(X-\mu)^2$. The exponential "blows up" the tail relative to the center, which is why the bound is so tight.
-- The MGF of a sum of independent variables is the product of individual MGFs. This is what allows the bound to scale cleanly with $n$.
-- The optimized $t$ is different for each threshold $a$. For Bernoulli, $t^* = \ln(1+\delta)$.
-- The exponential decay $e^{-\mu\delta^2/3}$ should be contrasted with Chebyshev's $\frac{1}{\delta^2}$: for any fixed $\delta > 0$, Chernoff becomes exponentially tighter as $\mu$ (equivalently $n$) grows.
+-   The pivotal move is applying Markov to $e^{tX}$ rather than to $X$ or $(X-\mu)^2$. The exponential "blows up" the tail relative to the center, which is why the bound is so tight.
+-   The MGF of a sum of independent variables is the product of individual MGFs. This is what allows the bound to scale cleanly with $n$.
+-   The optimized $t$ is different for each threshold $a$. For Bernoulli, $t^* = \ln(1+\delta)$.
+-   The exponential decay $e^{-\mu\delta^2/3}$ should be contrasted with Chebyshev's $\frac{1}{\delta^2}$: for any fixed $\delta > 0$, Chernoff becomes exponentially tighter as $\mu$ (equivalently $n$) grows.
 
 ## 2.5 Higher Moments
 
@@ -1099,13 +1099,13 @@ With probability at least $1 - 2/\beta^2$, the norm $|X|$ lies within $\beta$ of
 
 Let $Y = |X|^2 = \sum_{i=1}^d X_i^2$. We analyze $Y$ first, then convert to a statement about $|X|$.
 
-**Step 1: Mean and variance of $Y$.**
+**Step 1: Mean and variance of** $Y$.
 
 Each $X_i^2$ has $E[X_i^2] = 1$ and $E[X_i^4] = 3$ (the fourth moment of the standard normal), so $\text{Var}(X_i^2) = 3 - 1 = 2$. By independence:
 
 $$E[Y] = d \qquad \text{Var}(Y) = 2d$$
 
-**Step 2: Apply Chebyshev to $Y$.**
+**Step 2: Apply Chebyshev to** $Y$.
 
 $$P\big(|Y - d| \geq t\big) \leq \frac{\text{Var}(Y)}{t^2} = \frac{2d}{t^2}$$
 
@@ -1113,7 +1113,7 @@ Setting $t = 2\beta\sqrt{d}$:
 
 $$P\big(|\,|X|^2 - d\,| \geq 2\beta\sqrt{d}\big) \leq \frac{2d}{4\beta^2 d} = \frac{1}{2\beta^2}$$
 
-**Step 3: Convert from $|X|^2$ to $|X|$.**
+**Step 3: Convert from** $|X|^2$ to $|X|$.
 
 If $|X|^2$ is within $2\beta\sqrt{d}$ of $d$, then $|X|^2 \in [d - 2\beta\sqrt{d},\; d + 2\beta\sqrt{d}]$.
 
@@ -1125,9 +1125,9 @@ $$P\Big(|\,|X| - \sqrt{d}\,| \geq \beta\Big) \leq \frac{2}{\beta^2}$$
 
 Recap:
 
-- The derivation requires nothing beyond Chebyshev applied to $|X|^2 = \sum X_i^2$.
-- The concentration is a consequence of variance shrinking relative to the mean. $\text{Var}(Y)/E[Y]^2 = 2d/d^2 = 2/d \to 0$: as $d$ grows, $Y/d$ becomes increasingly concentrated around 1.
-- This has a striking geometric implication: in high dimensions, two randomly drawn Gaussian points are nearly always at the same distance from the origin, and that distance is close to $\sqrt{d}$.
+-   The derivation requires nothing beyond Chebyshev applied to $|X|^2 = \sum X_i^2$.
+-   The concentration is a consequence of variance shrinking relative to the mean. $\text{Var}(Y)/E[Y]^2 = 2d/d^2 = 2/d \to 0$: as $d$ grows, $Y/d$ becomes increasingly concentrated around 1.
+-   This has a striking geometric implication: in high dimensions, two randomly drawn Gaussian points are nearly always at the same distance from the origin, and that distance is close to $\sqrt{d}$.
 
 ### 2.6.3 Simulation
 
@@ -1200,7 +1200,7 @@ $$P(X \geq x) = \left(\frac{x_m}{x}\right)^\alpha$$
 The moments of a Pareto distribution exist only up to order $\alpha$:
 
 | $\alpha$ | Moments that exist | Implications |
-|---|---|---|
+|------------------------|------------------------|------------------------|
 | $\alpha > 2$ | Mean and variance | Chebyshev applies; LLN holds normally |
 | $1 < \alpha \leq 2$ | Mean, but no variance | Chebyshev inapplicable; LLN holds, but convergence is slow |
 | $\alpha \leq 1$ | Neither mean nor variance | LLN breaks down entirely |
@@ -1279,19 +1279,19 @@ The first equality holds because $g$ is non-decreasing. The inequality is Markov
 
 Every result in this chapter is a special case of this template:
 
-| Bound | Choice of $g(x)$ | Resulting bound |
-|---|---|---|
-| Markov | $g(x) = x$ | $E[X]\;/\;a$ |
-| Chebyshev | $g(x) = (x - \mu)^2$ | $\text{Var}(X)\;/\;\epsilon^2$ |
-| $k$-th moment | $g(x) = x^k$ | $E[X^k]\;/\;a^k$ |
-| Chernoff | $g(x) = e^{tx}$ | $e^{-ta}\,M_X(t)$ |
+| Bound         | Choice of $g(x)$     | Resulting bound                |
+|---------------|----------------------|--------------------------------|
+| Markov        | $g(x) = x$           | $E[X]\;/\;a$                   |
+| Chebyshev     | $g(x) = (x - \mu)^2$ | $\text{Var}(X)\;/\;\epsilon^2$ |
+| $k$-th moment | $g(x) = x^k$         | $E[X^k]\;/\;a^k$               |
+| Chernoff      | $g(x) = e^{tx}$      | $e^{-ta}\,M_X(t)$              |
 
 The "art" in applying the master theorem is choosing $g$ to minimize the resulting bound for the distribution and threshold at hand. The choices above are not arbitrary:
 
-- $g(x) = x$ uses the least information but is universally applicable.
-- $g(x) = (x-\mu)^2$ introduces variance, tightening the bound for distributions where spread is small.
-- $g(x) = x^k$ for large $k$ works well when the distribution has light tails (moments don't grow too fast).
-- $g(x) = e^{tx}$ is optimal for many distributions precisely because the exponential grows faster than any polynomial, meaning $E[e^{tX}]/e^{ta}$ decays exponentially fast.
+-   $g(x) = x$ uses the least information but is universally applicable.
+-   $g(x) = (x-\mu)^2$ introduces variance, tightening the bound for distributions where spread is small.
+-   $g(x) = x^k$ for large $k$ works well when the distribution has light tails (moments don't grow too fast).
+-   $g(x) = e^{tx}$ is optimal for many distributions precisely because the exponential grows faster than any polynomial, meaning $E[e^{tX}]/e^{ta}$ decays exponentially fast.
 
 The Chernoff bound is so powerful because $e^{tx}$ amplifies large values of $X$ more aggressively than any polynomial. When $X$ is unlikely to be large, this aggressive amplification means $E[e^{tX}]$ remains small, and the bound is tight.
 
@@ -1321,4 +1321,3 @@ comparison |> flextable()
 ```
 
 For $X \sim \text{Exponential}(1)$ at $a = 3$: Markov gives 0.333, Chebyshev gives 0.222, the 4th moment gives 0.296, and Chernoff gives 0.100 — against an actual probability of 0.050. Each tighter bound requires more information about the distribution (mean → variance → higher moments → full MGF), but rewards that information with a smaller bound.
-
