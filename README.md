@@ -4,7 +4,7 @@ Course notes on the text Foundations of Data Science (Blum et al 2020)
 ## High Dimensional Space
 Learning to project out of many-sided data
 
-[Markov's Inequality](https)
+[Markov's Inequality](https://dkillian.github.io/FoundationsDataScience/markov_inequality.html)
 
 [Chebyshev's Inequality](https:://)
 
