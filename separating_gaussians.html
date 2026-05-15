@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Dan Killian">
-<meta name="dcterms.date" content="2026-04-18">
+<meta name="dcterms.date" content="2026-04-22">
 
 <title>Separating Gaussians</title>
 <style>
@@ -122,6 +122,7 @@ window.Quarto = {
   <li><a href="#the-problem" id="toc-the-problem" class="nav-link active" data-scroll-target="#the-problem">The Problem</a>
   <ul class="collapse">
   <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">The data</a></li>
+  <li><a href="#posterior-probability" id="toc-posterior-probability" class="nav-link" data-scroll-target="#posterior-probability">Posterior probability</a></li>
   <li><a href="#mixture-weights" id="toc-mixture-weights" class="nav-link" data-scroll-target="#mixture-weights">Mixture weights</a></li>
   </ul></li>
   <li><a href="#the-geometry" id="toc-the-geometry" class="nav-link" data-scroll-target="#the-geometry">The Geometry</a></li>
@@ -152,7 +153,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 18, 2026</p>
+      <p class="date">April 22, 2026</p>
     </div>
   </div>
   
@@ -198,26 +199,141 @@ window.Quarto = {
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">n       =</span> <span class="fu">n</span>(),</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_cm =</span> <span class="fu">mean</span>(cm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_cm   =</span> <span class="fu">sd</span>(cm,   <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">weight =</span> n <span class="sc">/</span> <span class="fu">sum</span>(n))</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>parms <span class="sc">|&gt;</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(sex, n, weight, mean_cm, sd_cm) <span class="sc">|&gt;</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">flextable</span>() <span class="sc">|&gt;</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colformat_double</span>(<span class="at">j =</span> <span class="st">"weight"</span>, <span class="at">digits =</span> <span class="dv">3</span>) <span class="sc">|&gt;</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colformat_double</span>(<span class="at">j =</span> <span class="fu">c</span>(<span class="st">"mean_cm"</span>, <span class="st">"sd_cm"</span>), <span class="at">digits =</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  ) </span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>prior_f <span class="ot">&lt;-</span> parms<span class="sc">$</span>n[<span class="dv">1</span>] <span class="sc">/</span> <span class="fu">sum</span>(parms<span class="sc">$</span>n)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>prior_m <span class="ot">&lt;-</span> parms<span class="sc">$</span>n[<span class="dv">2</span>] <span class="sc">/</span> <span class="fu">sum</span>(parms<span class="sc">$</span>n)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>parms_flx <span class="ot">&lt;-</span> parms <span class="sc">|&gt;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">weight =</span> n <span class="sc">/</span> <span class="fu">sum</span>(n)) <span class="sc">|&gt;</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(sex, n, weight, mean_cm, sd_cm) <span class="sc">|&gt;</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">flextable</span>() <span class="sc">|&gt;</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colformat_double</span>(<span class="at">j =</span> <span class="st">"weight"</span>, <span class="at">digits =</span> <span class="dv">3</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colformat_double</span>(<span class="at">j =</span> <span class="fu">c</span>(<span class="st">"mean_cm"</span>, <span class="st">"sd_cm"</span>), <span class="at">digits =</span> <span class="dv">1</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>parms_flx</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div class="tabwid"><style>.cl-58883d8e{table-layout:auto;}.cl-587f20dc{font-family:'Gill Sans MT';font-size:10pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-5882dff6{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-5882e000{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-588313ae{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-588313af{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-588313b8{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-588313c2{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-588313c3{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-588313cc{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-58883d8e"><thead><tr style="overflow-wrap:break-word;"><th class="cl-588313ae"><p class="cl-5882dff6"><span class="cl-587f20dc">sex</span></p></th><th class="cl-588313af"><p class="cl-5882e000"><span class="cl-587f20dc">n</span></p></th><th class="cl-588313af"><p class="cl-5882e000"><span class="cl-587f20dc">weight</span></p></th><th class="cl-588313af"><p class="cl-5882e000"><span class="cl-587f20dc">mean_cm</span></p></th><th class="cl-588313af"><p class="cl-5882e000"><span class="cl-587f20dc">sd_cm</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-588313b8"><p class="cl-5882dff6"><span class="cl-587f20dc">female</span></p></td><td class="cl-588313c2"><p class="cl-5882e000"><span class="cl-587f20dc">3,658</span></p></td><td class="cl-588313c2"><p class="cl-5882e000"><span class="cl-587f20dc">0.509</span></p></td><td class="cl-588313c2"><p class="cl-5882e000"><span class="cl-587f20dc">162.0</span></p></td><td class="cl-588313c2"><p class="cl-5882e000"><span class="cl-587f20dc">7.3</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-588313c3"><p class="cl-5882dff6"><span class="cl-587f20dc">male</span></p></td><td class="cl-588313cc"><p class="cl-5882e000"><span class="cl-587f20dc">3,524</span></p></td><td class="cl-588313cc"><p class="cl-5882e000"><span class="cl-587f20dc">0.491</span></p></td><td class="cl-588313cc"><p class="cl-5882e000"><span class="cl-587f20dc">175.8</span></p></td><td class="cl-588313cc"><p class="cl-5882e000"><span class="cl-587f20dc">7.5</span></p></td></tr></tbody></table></div>
+<div class="tabwid"><style>.cl-e841711c{table-layout:auto;}.cl-e8365a52{font-family:'Gill Sans MT';font-size:10pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-e83b9eae{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-e83b9eb8{margin:0;text-align:right;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-e83bdf72{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-e83bdf7c{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-e83bdf7d{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-e83bdf86{background-color:transparent;vertical-align: middle;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-e83bdf87{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-e83bdf90{background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style><table data-quarto-disable-processing="true" class="cl-e841711c"><thead><tr style="overflow-wrap:break-word;"><th class="cl-e83bdf72"><p class="cl-e83b9eae"><span class="cl-e8365a52">sex</span></p></th><th class="cl-e83bdf7c"><p class="cl-e83b9eb8"><span class="cl-e8365a52">n</span></p></th><th class="cl-e83bdf7c"><p class="cl-e83b9eb8"><span class="cl-e8365a52">weight</span></p></th><th class="cl-e83bdf7c"><p class="cl-e83b9eb8"><span class="cl-e8365a52">mean_cm</span></p></th><th class="cl-e83bdf7c"><p class="cl-e83b9eb8"><span class="cl-e8365a52">sd_cm</span></p></th></tr></thead><tbody><tr style="overflow-wrap:break-word;"><td class="cl-e83bdf7d"><p class="cl-e83b9eae"><span class="cl-e8365a52">female</span></p></td><td class="cl-e83bdf86"><p class="cl-e83b9eb8"><span class="cl-e8365a52">3,658</span></p></td><td class="cl-e83bdf86"><p class="cl-e83b9eb8"><span class="cl-e8365a52">0.509</span></p></td><td class="cl-e83bdf86"><p class="cl-e83b9eb8"><span class="cl-e8365a52">162.0</span></p></td><td class="cl-e83bdf86"><p class="cl-e83b9eb8"><span class="cl-e8365a52">7.3</span></p></td></tr><tr style="overflow-wrap:break-word;"><td class="cl-e83bdf87"><p class="cl-e83b9eae"><span class="cl-e8365a52">male</span></p></td><td class="cl-e83bdf90"><p class="cl-e83b9eb8"><span class="cl-e8365a52">3,524</span></p></td><td class="cl-e83bdf90"><p class="cl-e83b9eb8"><span class="cl-e8365a52">0.491</span></p></td><td class="cl-e83bdf90"><p class="cl-e83b9eb8"><span class="cl-e8365a52">175.8</span></p></td><td class="cl-e83bdf90"><p class="cl-e83b9eb8"><span class="cl-e8365a52">7.5</span></p></td></tr></tbody></table></div>
 </div>
 </div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(heights, <span class="fu">aes</span>(<span class="at">x=</span>cm, <span class="at">color=</span>sex, <span class="at">fill=</span>sex)) <span class="sc">+</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_density</span>(<span class="at">alpha=</span>.<span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_d</span>() <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_viridis_d</span>() <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">breaks=</span><span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">y=</span><span class="st">""</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">title=</span><span class="st">"Distribution of Heights"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="separating_gaussians_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It is clear that there is lots of overlap in the heights of men and women. Short men and tall women cannot be distinguished.</p>
+<p>Given the overlap, no height provides certainty — but we can do better than a coin flip. If we model each group’s heights as Gaussian and use each group’s share of the sample as a prior, Bayes’ theorem gives us a posterior probability for any observed height.</p>
+</section>
+<section id="posterior-probability" class="level3">
+<h3 class="anchored" data-anchor-id="posterior-probability">Posterior probability</h3>
+<p>We want <span class="math inline">\(P(\text{female} \mid h)\)</span> — the probability that a person of height <span class="math inline">\(h\)</span> is female. By Bayes’ theorem:</p>
+<p><span class="math display">\[P(\text{female} \mid h) = \frac{P(h \mid \text{female}) \cdot \pi_f}{P(h \mid \text{female}) \cdot \pi_f \;+\; P(h \mid \text{male}) \cdot \pi_m}\]</span></p>
+<p>Each term has a clear role:</p>
+<ul>
+<li><span class="math inline">\(P(h \mid \text{female}) = \phi(h;\, \mu_f, \sigma_f)\)</span> is the <strong>likelihood</strong> — how probable is this height under the female Gaussian?</li>
+<li><span class="math inline">\(\pi_f\)</span> is the <strong>prior</strong> — what fraction of the population is female, before observing height?</li>
+<li>The denominator is the total probability of observing height <span class="math inline">\(h\)</span> across both groups, ensuring the posteriors sum to 1.</li>
+</ul>
+<p>Crucially, <span class="math inline">\(P(\text{male} \mid h) = 1 - P(\text{female} \mid h)\)</span>, so only one calculation is needed.</p>
 </section>
 <section id="mixture-weights" class="level3">
 <h3 class="anchored" data-anchor-id="mixture-weights">Mixture weights</h3>
 <p>The mixture weight <span class="math inline">\(\pi_k\)</span> is the share of the total sample belonging to group <span class="math inline">\(k\)</span>:</p>
-<p><span class="math display">\[\pi_k = \frac{n_k}{N}, \qquad N = \sum_k n_k\]</span></p>
-<p>For this dataset, <span class="math inline">\(\pi_f =\)</span> 0.509 and <span class="math inline">\(\pi_m =\)</span> 0.491. These reflect the sample composition and serve as <strong>prior probabilities</strong> before observing any height.</p>
+<p><span class="math display">\[\pi_k = \frac{n_k}{N}, \qquad N = \sum_k n_k\]</span> For this dataset, <span class="math inline">\(\pi_f =\)</span> 0.509 and <span class="math inline">\(\pi_m =\)</span> 0.491. These reflect the sample composition and serve as <strong>prior probabilities</strong> before observing any height.</p>
 <p>Without mixture weights, we would implicitly treat each group as equally probable — equivalent to setting <span class="math inline">\(\pi_f = \pi_m = 0.5\)</span>. When the groups differ in size, this introduces a systematic bias in classification.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>heights <span class="ot">&lt;-</span> heights <span class="sc">|&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">lik_female =</span> <span class="fu">dnorm</span>(cm,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mean=</span>parms<span class="sc">$</span>mean_cm[<span class="dv">1</span>],</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">sd=</span>parms<span class="sc">$</span>sd_cm[<span class="dv">1</span>]),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">lik_male =</span> <span class="fu">dnorm</span>(cm,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                            <span class="at">mean =</span> parms<span class="sc">$</span>mean_cm[<span class="dv">2</span>],</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>                            <span class="at">sd =</span> parms<span class="sc">$</span>sd_cm[<span class="dv">2</span>]),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">p_female   =</span> (lik_female <span class="sc">*</span> prior_f) <span class="sc">/</span> </span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>               (lik_female <span class="sc">*</span> prior_f <span class="sc">+</span> lik_male <span class="sc">*</span> prior_m),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">p_male =</span> ( lik_male <span class="sc">*</span> prior_m ) <span class="sc">/</span> </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>               ( (lik_male <span class="sc">*</span> prior_m) <span class="sc">+</span> (lik_female <span class="sc">*</span> prior_f) )</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>heights <span class="ot">&lt;-</span> heights <span class="sc">%&gt;%</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(sex) <span class="sc">%&gt;%</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">percentile=</span><span class="fu">cume_dist</span>(cm))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggridges)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(heights, <span class="fu">aes</span>(<span class="at">x =</span> cm, <span class="at">y =</span> sex)) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density_ridges</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Picking joint bandwidth of 1.27</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="separating_gaussians_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(heights, <span class="fu">aes</span>(<span class="at">x =</span> cm, <span class="at">fill =</span> sex)) <span class="sc">+</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dotplot</span>(<span class="at">binwidth =</span> <span class="dv">2</span>, <span class="at">dotsize=</span>.<span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">100</span>, <span class="dv">220</span>, <span class="dv">20</span>)) <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> sex, <span class="at">ncol =</span> <span class="dv">1</span>) <span class="sc">+</span> </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    faceted</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="separating_gaussians_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(heights, <span class="fu">aes</span>(cm)) <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y=</span>p_male),</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">size=</span>.<span class="dv">5</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">color=</span><span class="st">"dodgerblue2"</span>) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y=</span>p_female),</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">size=</span>.<span class="dv">5</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">color=</span><span class="st">"indianred"</span>) <span class="sc">+</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">limits=</span><span class="fu">c</span>(<span class="dv">135</span>,<span class="dv">205</span>),</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">140</span>,<span class="dv">200</span>,<span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="separating_gaussians_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 </section>
 <section id="the-geometry" class="level2">

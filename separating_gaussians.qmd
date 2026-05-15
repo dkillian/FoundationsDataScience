@@ -82,18 +82,38 @@ ggplot(heights, aes(x=cm, color=sex, fill=sex)) +
          title="Distribution of Heights")
 ```
 
+It is clear that there is lots of overlap in the heights of men and women. Short men and tall women cannot be distinguished. 
+
+Given the overlap, no height provides certainty — but we can do better than a coin flip. If we model each group's heights as Gaussian and use each group's share of the sample as a prior, Bayes' theorem gives us a posterior probability for any observed height.
+
+### Posterior probability
+
+We want $P(\text{female} \mid h)$ — the probability that a person of height $h$ is female. By Bayes' theorem:
+
+$$P(\text{female} \mid h) = \frac{P(h \mid \text{female}) \cdot \pi_f}{P(h \mid \text{female}) \cdot \pi_f \;+\; P(h \mid \text{male}) \cdot \pi_m}$$
+
+Each term has a clear role:
+
+- $P(h \mid \text{female}) = \phi(h;\, \mu_f, \sigma_f)$ is the **likelihood** — how probable is this height under the female Gaussian?
+- $\pi_f$ is the **prior** — what fraction of the population is female, before observing height?
+- The denominator is the total probability of observing height $h$ across both groups, ensuring the posteriors sum to 1.
+
+Crucially, $P(\text{male} \mid h) = 1 - P(\text{female} \mid h)$, so only one calculation is needed.
+
+
+
 
 ### Mixture weights
 
 The mixture weight $\pi_k$ is the share of the total sample belonging to group $k$:
 
 $$\pi_k = \frac{n_k}{N}, \qquad N = \sum_k n_k$$
-
-For this dataset, $\pi_f =$ `r round(parms$weight[1], 3)` and $\pi_m =$ `r round(parms$weight[2], 3)`. These reflect the sample composition and serve as **prior probabilities** before observing any height.
+For this dataset, $\pi_f =$ `r round(prior_f, 3)` and $\pi_m =$ `r round(prior_m, 3)`. These reflect the sample composition and serve as **prior probabilities** before observing any height.
 
 Without mixture weights, we would implicitly treat each group as equally probable — equivalent to setting $\pi_f = \pi_m = 0.5$. When the groups differ in size, this introduces a systematic bias in classification.
 
 ```{r}
+
 heights <- heights |>
     mutate(lik_female = dnorm(cm,
                             mean=parms$mean_cm[1],

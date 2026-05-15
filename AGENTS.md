@@ -1,5 +1,9 @@
 # Foundations of Data Science – Project Memory
 
+## Activity Setup
+Follow the Activity Setup Guide at: `C:\Users\dkill\OneDrive\Documents\ActivitySetupGuide.md`
+Read this at the start of each session to initialize or resume any activity within this workspace.
+
 ## Overview
 Course notes for **Foundations of Data Science** by Blum, Hopcroft & Kannan (2020).
 Published at: https://dkillian.github.io/FoundationsDataScience/

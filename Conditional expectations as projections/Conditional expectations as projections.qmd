@@ -1,0 +1,23 @@
+---
+title: "Conditional expectations as projections"
+subtitle: "An explainer of Math with Ming"
+author: "Dan Killian"
+date: today
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute:
+  keep-md: true
+editor: visual
+reference-location: margin
+---
+
+```{r global_options, include=F, warning=F, message=F, echo=F, error=F}
+library(here)
+library(knitr)
+source("../prep (May 2025).r")
+```
