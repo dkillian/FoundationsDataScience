@@ -5,40 +5,30 @@ Follow the Activity Setup Guide at: `C:\Users\dkill\OneDrive\Documents\ActivityS
 Read this at the start of each session to initialize or resume any activity within this workspace.
 
 ## Overview
-Course notes for **Foundations of Data Science** by Blum, Hopcroft & Kannan (2020).
-Published at: https://dkillian.github.io/FoundationsDataScience/
+Course notes and learning activities in data science, organized around two activities:
+**Blum 2020 Course Notes** (working through the textbook) and **Mathematics with Ming**
+(standalone learning sessions).
 
-## Files
-- `Foundations of Data Science_ch2.qmd` — Chapter 2 notes (active)
-- `Foundations of Data Science (Blum 2020).pdf` — Source textbook (486 pages)
-- `ch2_text.txt` — Extracted plain text of Chapter 2 (pages 12–38)
-- `prep (May 2025).R` — Global setup: loads libraries, sets themes/palettes (sourced in YAML)
+## Activities
 
-## Chapter 2 – High-Dimensional Space
+| Activity | Folder | Memory file |
+|----------|--------|-------------|
+| Blum 2020 Course Notes | *(project root)* | `Blum 2020.md` |
+| Mathematics with Ming | `Mathematics with Ming/` | `Mathematics with Ming/Mathematics with Ming.md` |
 
-### Document structure (current)
-| Section | Title | Status |
-|---------|-------|--------|
-| 2.1 | Markov's Inequality | Complete — application, derivation, interactive Plotly widget (6 distributions, animated slider) |
-| 2.2 | Chebyshev's Inequality | Complete — application, derivation (via Markov on (X−μ)²), two-point distribution static chart, interactive Plotly widget (5 distributions) |
-| 2.3 | Law of Large Numbers | Complete — statement, derivation via Chebyshev, simulation with 3 distributions (Normal, Exponential, Bernoulli), two ggplot2 visualizations |
-| 2.4 | Chernoff Bounds | Complete — MGF derivation, Binomial example, comparison plot vs Chebyshev |
-| 2.5 | Higher Moments | Complete — k-th moment bound, Exponential(1) example, plot of optimal k |
-| 2.6 | Gaussian Annulus | Complete — Chebyshev-based derivation, simulation for d=2,5,20,100,500 |
-| 2.7 | Power Law Distributions | Complete — Pareto distribution, three-regime simulation (α=0.8, 1.5, 2.5) |
-| 2.8 | Master Tail Bounds Theorem | Complete — but needs revision (see below) |
+```mermaid
+graph TD
+    ROOT["📁 Foundations of Data Science<br/><i>AGENTS.md</i>"]
 
-### Outstanding work – Chapter 2
-1. **Fix Section 2.8**: My write-up described a general E[g(X)]/g(a) framework. Blum's Theorem 2.5 is a *specific* exponential concentration result for sums of independent zero-mean variables with bounded higher moments: P(|x| ≥ a) ≤ 3e^{−a²/(12nσ²)}. Section needs to be rewritten to match the textbook.
-2. **Fix Section 2.6 (Gaussian Annulus)**: My derivation gives a Chebyshev-based polynomial bound. Blum's Theorem 2.9 gives a tighter exponential bound (≤ 3e^{−cβ²}) derived from Theorem 2.5. The tighter result should be noted.
-3. **Unwritten sections** (2.3–2.9 in Blum, geometry of high dimensions):
-   - 2.3 Geometry of High Dimensions (volume near surface)
-   - 2.4 Properties of the Unit Ball (volume formula via Gamma function; volume near equator Theorem 2.7)
-   - 2.5 Generating Points Uniformly at Random from a Ball
-   - 2.6 Gaussians in High Dimension (Gaussian Annulus Theorem 2.9)
-   - 2.7 Random Projection and Johnson-Lindenstrauss Lemma
-   - 2.8 Separating Gaussians
-   - 2.9 Fitting a Spherical Gaussian to Data
+    ROOT --> BLUM["📄 Blum 2020 Course Notes<br/><i>Blum 2020.md</i>"]
+    ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming.md</i>"]
+
+    BLUM --> HDS["High Dimensional Space"]
+    BLUM --> SVD["Singular Value Decomposition"]
+    BLUM --> RW["Random Walks Along Markov Chains"]
+
+    MWM --> CEAP["📄 Conditional expectations as projections<br/><i>Conditional expectations as projections.md</i>"]
+```
 
 ## Coding style / conventions
 
@@ -56,45 +46,3 @@ Additional conventions not in the prep file:
 - Code chunks: visible by default; `#| echo: false` for plotting code and large widget blocks
 - `set.seed()` uses arbitrary integers (not 42/123)
 - Sections follow pattern: application → derivation → simulation/visualization
-
-## Activities
-
-This project contains two activities:
-
-| Activity | Folder | Memory file |
-|----------|--------|-------------|
-| Blum 2020 Course Notes | *(project root)* | `AGENTS.md` (this file) |
-| Mathematics with Ming | `Mathematics with Ming/` | `Mathematics with Ming/Mathematics with Ming.md` |
-
-**Tasks under Blum 2020 Course Notes:**
-
-| Task | File | Memory file |
-|------|------|-------------|
-| Separating Gaussians | `separating_gaussians.qmd` | *(none — lives at project root)* |
-
-```mermaid
-graph TD
-    ROOT["📁 Foundations of Data Science<br/><i>AGENTS.md</i>"]
-
-    ROOT --> BLUM["📄 Blum 2020 Course Notes<br/><i>(project root)</i>"]
-    ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming.md</i>"]
-
-    BLUM --> SG["📄 Separating Gaussians<br/><i>separating_gaussians.qmd</i>"]
-    MWM --> CEAP["📄 Conditional expectations as projections<br/><i>Conditional expectations as projections.md</i>"]
-```
-
----
-
-## Chapter 3 – Best-Fit Subspaces and SVD (next)
-Blum Chapter 3 covers:
-- 3.1 Introduction
-- 3.2 Preliminaries
-- 3.3 Singular Vectors
-- 3.4 Singular Value Decomposition (SVD)
-- 3.5 Best Rank-k Approximations
-- 3.6 Left Singular Vectors
-- 3.7 Power Method for SVD (+ faster method)
-- 3.8 Singular Vectors and Eigenvectors
-- 3.9 Applications of SVD (centering data, PCA, clustering mixture of Gaussians, ranking, discrete optimization)
-- 3.10 Bibliographic Notes
-- 3.11 Exercises
