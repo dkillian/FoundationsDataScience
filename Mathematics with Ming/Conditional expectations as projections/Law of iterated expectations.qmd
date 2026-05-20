@@ -1,0 +1,227 @@
+---
+title: "The Law of Iterated Expectations"
+subtitle: "Also known as the tower property or Adam's law"
+author: "Dan Killian"
+date: today
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute:
+  keep-md: true
+editor: visual
+reference-location: margin
+---
+
+```{r global_options, include=F, warning=F, message=F, echo=F, error=F}
+library(here)
+library(knitr)
+source("../../prep (May 2025).R")
+```
+
+## The law
+
+The **law of iterated expectations** (also called the tower property or Adam's law) states:
+
+$$E[X] = E\big[E[X \mid Y]\big]$$
+
+In words: the overall average of X equals the weighted average of the group-specific averages of X, where the weights are the group sizes.
+
+This sounds obvious once you see it — but it's worth being precise about what "weighted average" means here, because a common mistake is to average group means without accounting for group size.
+
+---
+
+## The setup
+
+We have a sample of 1,000 people. For each person we observe:
+
+- **Y** — their highest level of education (High School, College, or Graduate)  
+- **X** — their annual income (in USD)
+
+Income tends to be higher for more educated workers, and the three groups are different sizes.
+
+```{r}
+set.seed(5842)
+
+n <- 1000
+
+education <- sample(
+  c("High School", "College", "Graduate"),
+  size    = n,
+  prob    = c(0.40, 0.45, 0.15),
+  replace = TRUE
+)
+
+income <- case_when(
+  education == "High School" ~ rnorm(n, mean = 40000, sd = 8000),
+  education == "College"     ~ rnorm(n, mean = 65000, sd = 12000),
+  education == "Graduate"    ~ rnorm(n, mean = 95000, sd = 20000)
+)
+
+df <- data.frame(education, income)
+head(df)
+```
+
+---
+
+## Step 1: The overall mean E[X]
+
+The overall mean income is straightforward:
+
+```{r}
+EX <- mean(df$income)
+cat("E[X] = overall mean income: $", round(EX, 0))
+```
+
+---
+
+## Step 2: The conditional means E[X | Y]
+
+Now compute the mean income *within each education group*. This gives us E[X | Y] — a function of Y that assigns each person their group's average income.
+
+```{r}
+library(tidyverse)
+
+group_stats <- df |>
+  summarise(
+    n       = n(),
+    mean    = mean(income),
+    .by     = education
+  ) |>
+  mutate(
+    prop    = n / sum(n),
+    education = factor(education, levels = c("High School", "College", "Graduate"))
+  ) |>
+  arrange(education)
+
+group_stats
+```
+
+```{r}
+#| echo: false
+ggplot(group_stats, aes(x = education, y = mean)) +
+  geom_col(fill = medium_blue, width = 0.5) +
+  geom_hline(yintercept = EX, color = usaid_red, linetype = "dashed", linewidth = 0.8) +
+  annotate("text", x = 0.6, y = EX + 1200,
+           label = paste0("E[X] = $", round(EX, 0)),
+           color = usaid_red, hjust = 0, size = 4) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Mean income by education group",
+    subtitle = "Dashed line = overall mean",
+    x = NULL, y = "Mean income"
+  )
+```
+
+---
+
+## Step 3: E[E[X | Y]] — iterating the expectation
+
+To get E[E[X | Y]], we take the expectation of the conditional mean over the distribution of Y. Since Y is discrete, this is a weighted average of group means, weighted by group proportions:
+
+$$E\big[E[X \mid Y]\big] = \sum_y E[X \mid Y = y] \cdot P(Y = y)$$
+
+```{r}
+E_EXY <- sum(group_stats$mean * group_stats$prop)
+cat("E[E[X|Y]] = $", round(E_EXY, 0))
+```
+
+---
+
+## Step 4: Verify the law
+
+```{r}
+cat(
+  "E[X]        = $", round(EX,    0), "\n",
+  "E[E[X|Y]]  = $", round(E_EXY, 0), "\n",
+  "Difference  =  ", round(EX - E_EXY, 6)
+)
+```
+
+They're equal (up to simulation noise). The law holds.
+
+---
+
+## The key pitfall: unweighted averages
+
+A common mistake is to average group means *without* weighting by group size:
+
+```{r}
+unweighted_mean <- mean(group_stats$mean)
+
+cat(
+  "Weighted avg of group means   (correct): $", round(E_EXY,           0), "\n",
+  "Unweighted avg of group means (wrong):   $", round(unweighted_mean, 0)
+)
+```
+
+These differ because the three groups are not the same size. High School (40%) and College (45%) workers outnumber Graduate (15%) workers. The unweighted average gives Graduate workers too much influence, pulling the result upward.
+
+```{r}
+#| echo: false
+comparison <- data.frame(
+  method = c("E[X]\n(true mean)", "E[E[X|Y]]\n(weighted)", "Simple avg\nof group means"),
+  value  = c(EX, E_EXY, unweighted_mean),
+  correct = c(TRUE, TRUE, FALSE)
+)
+
+ggplot(comparison, aes(x = method, y = value, fill = correct)) +
+  geom_col(width = 0.5) +
+  geom_text(aes(label = paste0("$", round(value, 0))),
+            vjust = -0.5, size = 4) +
+  scale_fill_manual(values = c("TRUE" = medium_blue, "FALSE" = usaid_red),
+                    labels = c("TRUE" = "Correct", "FALSE" = "Incorrect"),
+                    name = NULL) +
+  scale_y_continuous(labels = scales::dollar, limits = c(0, 75000)) +
+  labs(
+    title = "Weighted vs. unweighted average of group means",
+    subtitle = "Only the weighted average equals E[X]",
+    x = NULL, y = "Estimated mean income"
+  )
+```
+
+The law of iterated expectations is precise: the weights must come from the *marginal distribution of Y* — i.e., the actual proportion of people in each group.
+
+---
+
+## Why it works: decomposing the sum
+
+We can see the arithmetic directly. The overall mean is just the total income divided by n:
+
+$$E[X] = \frac{\sum_i x_i}{n} = \frac{\sum_y \left( \sum_{i: Y_i = y} x_i \right)}{n}$$
+
+Within each group, the sum of incomes equals the group mean times the group size:
+
+$$= \frac{\sum_y \bar{x}_y \cdot n_y}{n} = \sum_y \bar{x}_y \cdot \frac{n_y}{n} = \sum_y E[X \mid Y = y] \cdot P(Y = y)$$
+
+That last expression is exactly $$E[E[X \mid Y]]$$.
+
+```{r}
+# Verify the arithmetic directly
+group_stats |>
+  mutate(contribution = mean * prop) |>
+  summarise(
+    `E[E[X|Y]]` = sum(contribution)
+  )
+```
+
+---
+
+## Summary
+
+The law of iterated expectations says the overall mean is the probability-weighted average of group means:
+
+$$E[X] = E\big[E[X \mid Y]\big] = \sum_y E[X \mid Y = y] \cdot P(Y = y)$$
+
+Three names, one idea:
+
+| Name | Context |
+|------|---------|
+| Law of iterated expectations | Probability / statistics |
+| Tower property | Measure-theoretic probability |
+| Adam's law | Econometrics / applied statistics |
+
+The key practical lesson: when averaging subgroup means to recover an overall mean, **weight by group size**. An unweighted average of group means is not the same as the population mean unless all groups are the same size.

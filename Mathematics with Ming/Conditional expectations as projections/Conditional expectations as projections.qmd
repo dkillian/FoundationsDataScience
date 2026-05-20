@@ -1,0 +1,279 @@
+---
+title: "Conditional expectations as projections"
+subtitle: "An explainer of Math with Ming"
+author: "Dan Killian"
+date: today
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute:
+  keep-md: true
+editor: visual
+reference-location: margin
+---
+
+```{r global_options, include=F, warning=F, message=F, echo=F, error=F}
+library(here)
+library(knitr)
+source("../../prep (May 2025).R")
+```
+
+## The big idea
+
+This note works through a single concrete example to build geometric intuition for conditional expectations.
+
+The central claim, from the video [*Conditional Expectations Are Just Projections*](https://www.youtube.com/watch?v=q5D7w_i2JPg), is this:
+
+> **Conditional expectations are orthogonal projections** in the space of square-integrable (L2) random variables.
+
+That one idea — projection — turns out to explain all the standard rules: the tower property, the take-out-what's-given rule, and the conditional variance formula (EVE's law). And it turns out the conditional variance formula is nothing more than the Pythagorean theorem.
+
+---
+
+## The setup
+
+We work in a tiny world: four equally likely outcomes, ω₁ through ω₄. On each outcome we observe two quantities, Y (a coin flip) and X (a number that tends to be larger when Y = 1).
+
+```{r}
+omega <- data.frame(
+  outcome = c("ω₁", "ω₂", "ω₃", "ω₄"),
+  Y = c(0, 0, 1, 1),
+  X = c(1, 2, 3, 4)
+)
+
+omega
+```
+
+**The key conceptual shift:** treat X and Y not just as random variables, but as *vectors*. Each outcome is a coordinate. So X = [1, 2, 3, 4] and Y = [0, 0, 1, 1] are points in 4-dimensional space.
+
+In L2, the **inner product** between two random variables A and B is
+
+$$\langle A, B \rangle = E[AB]$$
+
+For our equally likely outcomes this is just the average of their elementwise products. Two random variables are **orthogonal** when their inner product equals zero: $$E[AB] = 0$$.
+
+```{r}
+X <- c(1, 2, 3, 4)
+Y <- c(0, 0, 1, 1)
+
+# Inner product in L2
+inner <- function(A, B) mean(A * B)
+```
+
+---
+
+## Step 1: E[X] as a projection onto constants
+
+The unconditional mean E[X] = 2.5 is the best *constant* approximation of X — the constant `c` that minimizes the mean squared error:
+
+$$E[(X - c)^2] = \frac{1}{4} \sum_{i=1}^{4} (x_i - c)^2$$
+
+```{r}
+#| echo: false
+c_vals <- seq(0, 5, by = 0.01)
+mse    <- sapply(c_vals, \(c) mean((X - c)^2))
+
+ggplot(data.frame(c = c_vals, mse = mse), aes(x = c, y = mse)) +
+  geom_line(color = medium_blue, linewidth = 1) +
+  geom_vline(xintercept = mean(X), linetype = "dashed", color = usaid_red) +
+  annotate("text", x = mean(X) + 0.15, y = 4,
+           label = "E[X] = 2.5", color = usaid_red, hjust = 0) +
+  labs(
+    title = "E[X] is the constant closest to X",
+    x = "Constant c",
+    y = expression(E[(X - c)^2])
+  )
+```
+
+Geometrically, the set of all constant random variables forms a subspace of L2 — the **span of 1**, or vectors of the form [c, c, c, c]. E[X] is the *projection* of X onto this subspace.
+
+---
+
+## Step 2: E[X|Y] as a projection onto functions of Y
+
+Now we allow more flexibility. Instead of a single constant, we can use any *function of Y*. In our example, a function of Y must assign one value when Y = 0 and another when Y = 1 — vectors of the form [a, a, b, b].
+
+The set of all such functions is the subspace $$H_Y$$. We want the element of $$H_Y$$ closest to X:
+
+$$E[X|Y] = \underset{g(Y) \in H_Y}{\arg\min} \; E\left[(X - g(Y))^2\right]$$
+
+```{r}
+grid <- expand.grid(
+  a = seq(0, 3, by = 0.05),   # value assigned when Y = 0
+  b = seq(2, 5, by = 0.05)    # value assigned when Y = 1
+)
+
+grid$mse <- apply(grid, 1, \(row) {
+  g_Y <- c(row["a"], row["a"], row["b"], row["b"])
+  mean((X - g_Y)^2)
+})
+
+best <- grid[which.min(grid$mse), ]
+cat("Best a (for Y = 0):", best$a,
+    "\nBest b (for Y = 1):", best$b,
+    "\nMinimum MSE:       ", best$mse)
+```
+
+The best function of Y is exactly the **group means** — E[X|Y = 0] = 1.5, E[X|Y = 1] = 3.5. As a vector:
+
+$$E[X|Y] = [1.5,\ 1.5,\ 3.5,\ 3.5]$$
+
+We now have three vectors to compare:
+
+```{r}
+#| echo: false
+EX_Y <- c(1.5, 1.5, 3.5, 3.5)
+
+vectors <- data.frame(
+  outcome = rep(c("ω₁", "ω₂", "ω₃", "ω₄"), 3),
+  value   = c(1, 2, 3, 4,
+              2.5, 2.5, 2.5, 2.5,
+              1.5, 1.5, 3.5, 3.5),
+  label   = rep(c("X", "E[X]", "E[X|Y]"), each = 4)
+)
+
+vectors$label <- factor(vectors$label, levels = c("X", "E[X|Y]", "E[X]"))
+
+ggplot(vectors, aes(x = outcome, y = value, color = label, group = label)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  scale_color_manual(
+    values = c("X" = "black", "E[X]" = light_grey, "E[X|Y]" = medium_blue)
+  ) +
+  labs(
+    title = "Three vectors in our sample space",
+    subtitle = "E[X|Y] tracks the group structure of X; E[X] is flat",
+    x = "Outcome", y = "Value", color = NULL
+  )
+```
+
+The subspaces are nested: constants ⊂ $$H_Y$$ ⊂ L2. E[X] projects onto the smallest; E[X|Y] projects onto a larger one.
+
+---
+
+## Step 3: Orthogonality
+
+The residual after projecting X onto $$H_Y$$ is:
+
+$$X - E[X|Y] = [1, 2, 3, 4] - [1.5, 1.5, 3.5, 3.5] = [-0.5,\ 0.5,\ -0.5,\ 0.5]$$
+
+The key geometric fact: **this residual is orthogonal to every function of Y**.
+
+Intuitively, the residual sums to zero within each Y-group (−0.5 + 0.5 = 0 in both groups). Any function of Y is constant within each group, so multiplying and averaging always cancels.
+
+```{r}
+resid <- X - EX_Y
+
+data.frame(
+  `g(Y)`                       = c("1", "Y", "[1, 1, 3.5, 3.5]", "E[X|Y]"),
+  `inner product with residual` = c(
+    inner(resid, c(1, 1, 1, 1)),
+    inner(resid, c(0, 0, 1, 1)),
+    inner(resid, c(1, 1, 3.5, 3.5)),
+    inner(resid, EX_Y)
+  ),
+  check.names = FALSE
+)
+```
+
+Every inner product is exactly zero.
+
+### Immediate corollary: the tower property
+
+The tower property, $$E[E[X|Y]] = E[X]$$, is just the g(Y) = 1 case. Since $$\langle X - E[X|Y],\ 1 \rangle = 0$$:
+
+$$E[X] - E[E[X|Y]] = 0 \implies E[E[X|Y]] = E[X]$$
+
+```{r}
+cat("E[X]      =", mean(X), "\nE[E[X|Y]] =", mean(EX_Y))
+```
+
+---
+
+## Step 4: The Pythagorean theorem
+
+Center everything by subtracting E[X]. The total deviation of X from its mean splits into two orthogonal pieces:
+
+$$\underbrace{X - E[X]}_{\text{total}} = \underbrace{(X - E[X|Y])}_{\text{residual}} + \underbrace{(E[X|Y] - E[X])}_{\text{explained}}$$
+
+- The **residual** is perpendicular to $$H_Y$$ (just shown above).
+- The **explained** part lives *in* $$H_Y$$ (it's a function of Y minus a constant).
+
+Two orthogonal vectors → Pythagorean theorem → squared norms add up.
+
+```{r}
+EX        <- mean(X)
+total     <- X - EX
+explained <- EX_Y - EX
+residual  <- X - EX_Y
+
+cat(
+  "Inner product of residual & explained:", inner(residual, explained), "\n\n",
+  "||total||²     = Var(X)         =", mean(total^2),     "\n",
+  "||explained||² = Var(E[X|Y])   =", mean(explained^2), "\n",
+  "||residual||²  = E[Var(X|Y)]   =", mean(residual^2),  "\n\n",
+  "Check: Var(E[X|Y]) + E[Var(X|Y)] =", mean(explained^2) + mean(residual^2)
+)
+```
+
+```{r}
+#| echo: false
+var_X     <- mean(total^2)
+var_EXY   <- mean(explained^2)
+E_var_XgY <- mean(residual^2)
+
+O <- c(0, 0)
+A <- c(sqrt(var_EXY), 0)
+B <- c(sqrt(var_EXY), sqrt(E_var_XgY))
+
+pts <- data.frame(
+  x = c(O[1], A[1], B[1], O[1]),
+  y = c(O[2], A[2], B[2], O[2])
+)
+
+ggplot(pts, aes(x, y)) +
+  geom_polygon(fill = usaid_red, alpha = 0.1, color = NA) +
+  geom_path(color = usaid_red, linewidth = 1) +
+  annotate("text", x = 0.5, y = -0.07,
+           label = "Var(E[X|Y]) = 1", hjust = 0.5, size = 4, color = medium_blue) +
+  annotate("text", x = 1.07, y = 0.25,
+           label = "E[Var(X|Y)] = 0.25", hjust = 0, size = 4, color = medium_blue) +
+  annotate("text", x = 0.4, y = 0.32,
+           label = "Var(X) = 1.25", hjust = 0.5, size = 4, angle = 17, color = usaid_red) +
+  annotate("rect", xmin = 0.95, xmax = 1.0, ymin = 0, ymax = 0.05,
+           fill = NA, color = "darkgray", linewidth = 0.5) +
+  coord_fixed() +
+  labs(
+    title = "The conditional variance formula is the Pythagorean theorem",
+    subtitle = "Var(X) = Var(E[X|Y]) + E[Var(X|Y)]",
+    x = NULL, y = NULL
+  ) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(),
+        panel.grid = element_blank())
+```
+
+The three sides of the right triangle are variances:
+
+| Side | Formula | Value | Meaning |
+|------|---------|------:|-------|
+| Hypotenuse | Var(X) | 1.25 | Total spread in X |
+| Bottom leg | Var(E[X\|Y]) | 1.00 | Spread *explained* by Y |
+| Right leg | E[Var(X\|Y)] | 0.25 | Spread *unexplained* — within-group variation |
+
+$$\underbrace{1.25}_{\text{Var}(X)} = \underbrace{1.00}_{\text{Var}(E[X|Y])} + \underbrace{0.25}_{E[\text{Var}(X|Y)]}$$
+
+---
+
+## Summary
+
+All three standard rules of conditional expectation follow from a single geometric fact: the residual $$X - E[X|Y]$$ is orthogonal to everything in $$H_Y$$.
+
+| Rule | Geometric statement |
+|------|-------------------|
+| Tower property: $$E[E[X\|Y]] = E[X]$$ | Orthogonality with $$g(Y) = 1$$ |
+| Take-out-what's-given: $$E[h(Y)X\|Y] = h(Y)E[X\|Y]$$ | Orthogonality with $$h(Y) \cdot g(Y)$$ |
+| Conditional variance formula: $$\text{Var}(X) = \text{Var}(E[X\|Y]) + E[\text{Var}(X\|Y)]$$ | Pythagorean theorem in L2 |

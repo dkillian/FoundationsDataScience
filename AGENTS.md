@@ -41,15 +41,49 @@ Published at: https://dkillian.github.io/FoundationsDataScience/
    - 2.9 Fitting a Spherical Gaussian to Data
 
 ## Coding style / conventions
+
+**Style guide:** `C:\Users\dkill\OneDrive\Documents\prep (May 2025).R`
+This is the global setup script and authoritative style reference. It defines:
+- Package lists (base, viz, graph, model, Bayes, tables) and `pckg_load()` helper
+- ggplot2 themes: `base` (default), `base_ppt` (presentations), `faceted`, `facet_style()`
+- USAID color palette: `medium_blue` `#0067B9`, `usaid_red` `#BA0C2F`, `light_grey` `#CFCDC9`, and others
+- `flextable` defaults (Gill Sans MT, 10pt)
+
+Additional conventions not in the prep file:
 - Base R pipe `|>` (not magrittr `%>%`)
-- `tidyverse` + `ggplot2` for static plots
 - `plotly` + `htmltools` for interactive widgets
-- Interactive widgets use tab buttons (custom CSS `.mkbtn`/`.mkactive` for Markov, `.cbbtn`/`.cbactive` for Chebyshev) with animated sliders
-- Color scheme: `#0067B9` (blue), `#BA0C2F` (red), `lightgray` (neutral)
+- Interactive widgets use tab buttons with animated sliders (custom CSS per section)
 - Code chunks: visible by default; `#| echo: false` for plotting code and large widget blocks
-- `flextable()` for data tables
 - `set.seed()` uses arbitrary integers (not 42/123)
 - Sections follow pattern: application → derivation → simulation/visualization
+
+## Activities
+
+This project contains two activities:
+
+| Activity | Folder | Memory file |
+|----------|--------|-------------|
+| Blum 2020 Course Notes | *(project root)* | `AGENTS.md` (this file) |
+| Mathematics with Ming | `Mathematics with Ming/` | `Mathematics with Ming/Mathematics with Ming.md` |
+
+**Tasks under Blum 2020 Course Notes:**
+
+| Task | File | Memory file |
+|------|------|-------------|
+| Separating Gaussians | `separating_gaussians.qmd` | *(none — lives at project root)* |
+
+```mermaid
+graph TD
+    ROOT["📁 Foundations of Data Science<br/><i>AGENTS.md</i>"]
+
+    ROOT --> BLUM["📄 Blum 2020 Course Notes<br/><i>(project root)</i>"]
+    ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming.md</i>"]
+
+    BLUM --> SG["📄 Separating Gaussians<br/><i>separating_gaussians.qmd</i>"]
+    MWM --> CEAP["📄 Conditional expectations as projections<br/><i>Conditional expectations as projections.md</i>"]
+```
+
+---
 
 ## Chapter 3 – Best-Fit Subspaces and SVD (next)
 Blum Chapter 3 covers:
