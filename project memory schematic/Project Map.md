@@ -6,18 +6,18 @@ Full task map across all activities. Update when activities or tasks are added.
 graph TD
     ROOT["📁 Foundations of Data Science<br/><i>AGENTS.md</i>"]
 
-    ROOT --> BLUM["📄 Blum 2020 Course Notes<br/><i>Blum 2020.md</i>"]
-    ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming.md</i>"]
+    ROOT --> BLUM["📁 Blum 2020<br/><i>Blum 2020/Blum 2020.md</i>"]
+    ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming/Mathematics with Ming.md</i>"]
 
-    BLUM --> HDS["High Dimensional Space"]
-    BLUM --> SVD["Singular Value Decomposition"]
-    BLUM --> RW["Random Walks Along Markov Chains"]
+    BLUM --> HDS["High Dimensional Space<br/><i>misc/ch2.qmd</i>"]
+    BLUM --> SVD["Singular Value Decomposition<br/><i>misc/ch3.qmd</i>"]
+    BLUM --> RW["Random Walks Along Markov Chains<br/><i>(forthcoming)</i>"]
 
-    HDS --> MI["Markov's Inequality"]
+    HDS --> MI["Markov's Inequality<br/><i>Markov inequality/</i>"]
     HDS --> CI["Chebyshev's Inequality"]
     HDS --> LLN["Law of Large Numbers"]
-    HDS --> PROJ["Projection"]
-    HDS --> SG["Separating Gaussians"]
+    HDS --> PROJ["Projection<br/><i>Projection/Projection.md</i>"]
+    HDS --> SG["Separating Gaussians<br/><i>Separating gaussians/</i>"]
 
     SVD --> CD["Centering Data"]
     SVD --> PCA["Principal Component Analysis"]
@@ -26,5 +26,5 @@ graph TD
 
     RW --> RW1["(forthcoming)"]
 
-    MWM --> CEAP["Conditional Expectations as Projections"]
+    MWM --> CEAP["Conditional Expectations as Projections<br/><i>Conditional expectations as projections/</i>"]
 ```
