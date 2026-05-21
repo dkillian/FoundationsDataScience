@@ -1,0 +1,1474 @@
+3     Best-Fit Subspaces and Singular Value Decompo-
+      sition (SVD)
+3.1     Introduction
+     In this chapter, we examine the Singular Value Decomposition (SVD) of a matrix.
+Consider each row of an n × d matrix A as a point in d-dimensional space. The singular
+value decomposition finds the best-fitting k-dimensional subspace for k = 1, 2, 3, . . . , for
+the set of n data points. Here, “best” means minimizing the sum of the squares of the
+perpendicular distances of the points to the subspace, or equivalently, maximizing the
+sum of squares of the lengths of the projections of the points onto this subspace.4 We
+begin with a special case where the subspace is 1-dimensional, namely a line through the
+origin. We then show that the best-fitting k-dimensional subspace can be found by k
+applications of the best fitting line algorithm, where on the ith iteration we find the best
+fit line perpendicular to the previous i − 1 lines. When k reaches the rank of the matrix,
+from these operations we get an exact decomposition of the matrix called the singular
+value decomposition.
+
+    In matrix notation, the singular value decomposition of a matrix A with real entries
+(we assume all our matrices have real entries) is the factorization of A into the product
+of three matrices, A = U DV T , where the columns of U and V are orthonormal5 and the
+matrix D is diagonal with positive real entries. The columns of V are the unit length vec-
+tors defining the best fitting lines described above (the ith column being the unit-length
+vector in the direction of the ith line). The coordinates of a row of U will be the fractions
+of the corresponding row of A along the direction of each of the lines.
+
+    The SVD is useful in many tasks. Often a data matrix A is close to a low rank ma-
+trix and it is useful to find a good low rank approximation to A. For any k, the singular
+value decomposition of A gives the best rank-k approximation to A in a well-defined sense.
+
+   If ui and vi are columns of U and V respectively, then the matrix equation A = U DV T
+can be rewritten as                      X
+                                    A=      dii ui vi T .
+                                                  i
+
+     This material has been published by Cambridge University Press as Foundations of Data Science by
+Avrim Blum, John Hopcroft, and Ravi Kannan. This pre-publication version is free to view and download
+for personal use only. Not for re-distribution, re-sale or use in derivative works. Please do not re-post
+or mirror, instead link to http://ttic.edu/blum/book.pdf. c Avrim Blum, John Hopcroft, and Ravi
+Kannan 2020. https://www.cambridge.org/9781108485067
+   4
+     This equivalence is due to the Pythagorean Theorem. For each point, its squared length (its distance
+to the origin squared) is exactly equal to the squared length of its projection onto the subspace plus the
+squared distance of the point to its projection; therefore, maximizing the sum of the former is equivalent
+to minimizing the sum of the latter. For further discussion see Section 3.2.
+   5
+     A set of vectors is orthonormal if each is of length one and they are pairwise orthogonal.
+
+
+                                                      40
+
+
+--- PAGE BREAK ---
+
+Since ui is a n × 1 matrix and vi is a d × 1 matrix, ui vi T is an n × d matrix with the
+same dimensions as A. The ith term in the above sum can be viewed as giving the compo-
+nents of the rows of A along direction vi . When the terms are summed, they reconstruct A.
+
+    This decomposition of A can be viewed as analogous to writing a vector x in some
+orthonormal basis v1 , v2 , . . . , vd . The coordinates of x = (x · v1 , x · v2 . . . , x · vd ) are the
+projections of x onto the vi ’s. For SVD, this basis has the property that for any k, the
+first k vectors of this basis produce the least possible total sum of squares error for that
+value of k.
+
+    In addition to the singular value decomposition, there is an eigenvalue decomposition.
+Let A be a square matrix. A vector v such that Av = λv is called an eigenvector and
+λ the eigenvalue. When A is symmetric, the eigenvectors are orthogonal and A can be
+expressed as A = V DV T where the eigenvectors are the columns of V and D is a diagonal
+matrix with the corresponding eigenvalues on its diagonal. For a symmetric matrix A the
+singular values are the absolute values of the eigenvalues. Some eigenvalues may be neg-
+ative but all singular values are positive by definition. If the singular values are distinct,
+then A’s right singular vectors and eigenvectors are identical up to scalar multiplication.
+The left singular vectors of A are identical with the right singular vectors of A when the
+corresponding eigenvalues are positive and are the negative of the right singular vectors
+when the corresponding eigenvalues are negative. If a singular value has multiplicity d
+greater than one, the corresponding singular vectors span a subspace of dimension d and
+any orthogonal basis of the subspace can be used as the eigenvectors or singular vectors.6
+
+   The singular value decomposition is defined for all matrices, whereas the more fa-
+miliar eigenvector decomposition requires that the matrix A be square and certain other
+conditions on the matrix to ensure orthogonality of the eigenvectors. In contrast, the
+columns of V in the singular value decomposition, called the right-singular vectors of A,
+always form an orthogonal set with no assumptions on A. The columns of U are called
+the left-singular vectors and they also form an orthogonal set (see Section 3.6). A simple
+consequence of the orthonormality is that for a square and invertible matrix A, the inverse
+of A is V D−1 U T .
+
+    Eigenvalues and eignevectors satisfy Av = λv. We will show that singular values and
+vectors satisfy a somewhat analogous relationship. Since Avi is a n × 1 matrix (vector),
+the matrix A cannot act on it from the left. But AT , which is a d × n matrix, can act on
+this vector. Indeed, we will show that
+                                Avi = dii ui     and     AT ui = dii vi .
+In words, A acting on vi produces a scalar multiple of ui and AT acting on ui produces
+the same scalar multiple of vi . Note that AT Avi = d2ii vi . The ith singular vector of A is
+   6
+    When d = 1 there are actually two possible singular vectors, one the negative of the other. The
+subspace spanned is unique.
+
+
+                                                   41
+
+
+--- PAGE BREAK ---
+
+                                                                                           dist2i is equiv-
+                                                                                            P
+                                            ai                              Minimizing
+                                                                                         i
+                                                                            alent to maximizing proj2i
+                                                                                                   P
+                                                                                                         i
+                                                   disti
+                                                                        v
+
+
+
+                         proji
+
+Figure 3.1: The projection of the point ai onto the line through the origin in the direction
+of v.
+
+the ith eigenvector of the square symmetric matrix AT A.
+
+3.2        Preliminaries
+       Consider projecting a point ai = (ai1 , ai2 , . . . , aid ) onto a line through the origin. Then
+
+          a2i1 + a2i2 + · · · + a2id = (length of projection)2 + (distance of point to line)2 .
+
+This holds by the Pythagorean Theorem (see Figure 3.1). Thus
+
+          (distance of point to line)2 = a2i1 + a2i2 + · · · + a2id − (length of projection)2 .
+         n
+               (a2i1 + a2i2 + · · · + a2id ) is a constant independent of the line, minimizing the sum
+         P
+Since
+         i=1
+of the squares of the distances to the line is equivalent to maximizing the sum of the
+squares of the lengths of the projections onto the line. Similarly for best-fit subspaces,
+maximizing the sum of the squared lengths of the projections onto the subspace minimizes
+the sum of squared distances to the subspace.
+
+   Thus we have two interpretations of the best-fit subspace. The first is that it minimizes
+the sum of squared distances of the data points to it. This first interpretation and its use
+are akin to the notion of least-squares fit from calculus.7 The second interpretation of
+best-fit-subspace is that it maximizes the sum of projections squared of the data points
+on it. This says that the subspace contains the maximum content of data among all
+subspaces of the same dimension. The choice of the objective function as the sum of
+squared distances seems a bit arbitrary and in a way it is. But the square has many nice
+mathematical properties. The first of these, as we have just seen, is that minimizing the
+sum of squared distances is equivalent to maximizing the sum of squared projections.
+   7
+    But there is a difference: here we take the perpendicular distance to the line or subspace, whereas,
+                                                                                      find a line l = {(x, y)|y = mx + b}
+in the calculus notion, given n pairs, (x1 , y1 ), (x2 , y2 ), . . . , (xn , yn ), we P
+                                                                                        n
+minimizing the vertical squared distances of the points to it, namely, i=1 (yi − mxi − b)2 .
+
+
+                                                           42
+
+
+--- PAGE BREAK ---
+
+3.3      Singular Vectors
+    We now define the singular vectors of an n × d matrix A. Consider the rows of A as
+n points in a d-dimensional space. Consider the best fit line through the origin. Let v
+be a unit vector along this line. The length of the projection of ai , the ith row of A, onto
+v is |ai · v|. From this we see that the sum of the squared lengths of the projections is
+|Av|2 . The best fit line is the one maximizing |Av|2 and hence minimizing the sum of the
+squared distances of the points to the line.
+
+      With this in mind, define the first singular vector v1 of A as
+
+                                       v1 = arg max |Av|.
+                                                 |v|=1
+
+
+Technically, there may be a tie for the vector attaining the maximum and so we should
+not use the article “the”; in fact, −v1 is always as good as v1 . In this case, we arbitrarily
+pick one of the vectors achieving the maximum and refer to it as “the first singular vector”
+avoiding the more cumbersome “one of the vectors achieving the maximum”. We adopt
+this terminology for all uses of arg max .
+
+      The value σ1 (A) = |Av1 | is called the first singular value of A. Note that σ12 =
+n
+    (ai · v1 )2 is the sum of the squared lengths of the projections of the points onto the line
+P
+i=1
+determined by v1 .
+
+    If the data points were all either on a line or close to a line, intuitively, v1 should
+give us the direction of that line. It is possible that data points are not close to one
+line, but lie close to a 2-dimensional subspace or more generally a low dimensional space.
+Suppose we have an algorithm for finding v1 (we will describe one such algorithm later).
+How do we use this to find the best-fit 2-dimensional plane or more generally the best fit
+k-dimensional space?
+
+    The greedy approach begins by finding v1 and then finds the best 2-dimensional
+subspace containing v1 . The sum of squared distances helps. For every 2-dimensional
+subspace containing v1 , the sum of squared lengths of the projections onto the subspace
+equals the sum of squared projections onto v1 plus the sum of squared projections along
+a vector perpendicular to v1 in the subspace. Thus, instead of looking for the best 2-
+dimensional subspace containing v1 , look for a unit vector v2 perpendicular to v1 that
+maximizes |Av|2 among all such unit vectors. Using the same greedy strategy to find the
+best three and higher dimensional subspaces, defines v3 , v4 , . . . in a similar manner. This
+is captured in the following definitions. There is no apriori guarantee that the greedy
+algorithm gives the best fit. But, in fact, the greedy algorithm does work and yields the
+best-fit subspaces of every dimension as we will show.
+
+      The second singular vector , v2 , is defined by the best fit line perpendicular to v1 .
+
+                                                43
+
+
+--- PAGE BREAK ---
+
+                                         v2 = arg max |Av|
+                                                     v⊥v1
+                                                    |v|=1
+
+The value σ2 (A) = |Av2 | is called the second singular value of A. The third singular
+vector v3 and the third singular value are defined similarly by
+
+                                          v3 = arg max |Av|
+                                                   v⊥v1 ,v2
+                                                    |v|=1
+
+
+and
+                                            σ3 (A) = |Av3 |,
+and so on. The process stops when we have found singular vectors v1 , v2 , . . . , vr , singular
+values σ1 , σ2 , . . . , σr , and
+                                    max |Av| = 0.
+                                         v⊥v1 ,v2 ,...,vr
+                                            |v|=1
+
+   The greedy algorithm found the v1 that maximized |Av| and then the best fit 2-
+dimensional subspace containing v1 . Is this necessarily the best-fit 2-dimensional sub-
+space overall? The following theorem establishes that the greedy algorithm finds the best
+subspaces of every dimension.
+
+Theorem 3.1 (The Greedy Algorithm Works) Let A be an n×d matrix with singu-
+lar vectors v1 , v2 , . . . , vr . For 1 ≤ k ≤ r, let Vk be the subspace spanned by v1 , v2 , . . . , vk .
+For each k, Vk is the best-fit k-dimensional subspace for A.
+
+Proof: The statement is obviously true for k = 1. For k = 2, let W be a best-fit 2-
+dimensional subspace for A. For any orthonormal basis (w1 , w2 ) of W , |Aw1 |2 + |Aw2 |2
+is the sum of squared lengths of the projections of the rows of A onto W . Choose an
+orthonormal basis (w1 , w2 ) of W so that w2 is perpendicular to v1 . If v1 is perpendicular
+to W , any unit vector in W will do as w2 . If not, choose w2 to be the unit vector in W
+perpendicular to the projection of v1 onto W. This makes w2 perpendicular to v1 .8 Since
+v1 maximizes |Av|2 , it follows that |Aw1 |2 ≤ |Av1 |2 . Since v2 maximizes |Av|2 over all
+v perpendicular to v1 , |Aw2 |2 ≤ |Av2 |2 . Thus
+
+                               |Aw1 |2 + |Aw2 |2 ≤ |Av1 |2 + |Av2 |2 .
+
+Hence, V2 is at least as good as W and so is a best-fit 2-dimensional subspace.
+
+   For general k, proceed by induction. By the induction hypothesis, Vk−1 is a best-fit
+k-1 dimensional subspace. Suppose W is a best-fit k-dimensional subspace. Choose an
+   8
+    This can be seen by noting that v1 is the sum of two vectors that each are individually perpendicular
+to w2 , namely the projection of v1 to W and the portion of v1 orthogonal to W .
+
+
+
+                                                      44
+
+
+--- PAGE BREAK ---
+
+orthonormal basis w1 , w2 , . . . , wk of W so that wk is perpendicular to v1 , v2 , . . . , vk−1 .
+Then
+             |Aw1 |2 + |Aw2 |2 + · · · + |Awk−1 |2 ≤ |Av1 |2 + |Av2 |2 + · · · + |Avk−1 |2
+since Vk−1 is an optimal k − 1 dimensional subspace. Since wk is perpendicular to
+v1 , v2 , . . . , vk−1 , by the definition of vk , |Awk |2 ≤ |Avk |2 . Thus
+|Aw1 |2 + |Aw2 |2 + · · · + |Awk−1 |2 + |Awk |2 ≤ |Av1 |2 + |Av2 |2 + · · · + |Avk−1 |2 + |Avk |2 ,
+proving that Vk is at least as good as W and hence is optimal.
+    Note that the n-dimensional vector Avi is a list of lengths (with signs) of the projec-
+tions of the rows of A onto vi . Think of |Avi | = σi (A) as the component of the matrix
+A along vi . For this interpretation to make sense, it should be true that adding up the
+squares of the components of A along each of the vi gives the square of the “whole content
+of A”. This is indeed the case and is the matrix analogy of decomposing a vector into its
+components along orthogonal directions.
+
+     Consider one row, say aj , of A. Since v1 , v2 , . . . , vr span the space of all rows of A,
+                                                                                     r
+                                                                                       (aj · vi )2 =
+                                                                                     P
+aj · v = 0 for all v perpendicular to v1 , v2 , . . . , vr . Thus, for each row aj ,
+                                                                                                          i=1
+|aj |2 . Summing over all rows j,
+            n
+            X                n X
+                             X r                       r X
+                                                       X n                       r
+                                                                                 X                 r
+                                                                                                   X
+                  |aj |2 =             (aj · vi )2 =             (aj · vi )2 =         |Avi |2 =         σi2 (A).
+            j=1              j=1 i=1                   i=1 j=1                   i=1               i=1
+
+      n                n P
+                         d
+            |aj |2 =             a2jk , the sum of squares of all the entries of A. Thus, the sum of
+      P                P
+But
+      j=1              j=1 k=1
+squares of the singular values of A is indeed the square of the “whole content of A”, i.e.,
+the sum of squares of all the entries. There is an important norm associated with this
+quantity, the Frobenius norm of A, denoted ||A||F defined as
+                                             sX
+                                    ||A||F =       a2jk .
+                                                                  j,k
+
+Lemma 3.2 For any matrix A, the P sum of squares of the singular values equals the square
+of the Frobenius norm. That is,  σi (A) = ||A||2F .
+                                   2
+
+
+Proof: By the preceding discussion.
+    The vectors v1 , v2 , . . . , vr are called the right-singular vectors. The vectors Avi form
+a fundamental set of vectors and we normalize them to length one by
+                                                     1
+                                            ui =         Avi .
+                                                  σi (A)
+Later we will show that ui similarly maximizes |uT A| over all u perpendicular to u1 , . . . , ui−1 .
+These ui are called the left-singular vectors. Clearly, the right-singular vectors are orthog-
+onal by definition. We will show later that the left-singular vectors are also orthogonal.
+
+                                                           45
+
+
+--- PAGE BREAK ---
+
+3.4     Singular Value Decomposition (SVD)
+
+    Let A be an n × d matrix with singular vectors v1 , v2 , . . . , vr and corresponding
+singular values σ1 , σ2 , . . . , σr . The left-singular vectors of A are ui = σ1i Avi where σi ui is
+a vector whose coordinates correspond to the projections of the rows of A onto vi . Each
+σi ui viT is a rank one matrix whose rows are the “vi components” of the rows of A, i.e., the
+projections of the rows of A in the vi direction. We will prove that A can be decomposed
+into a sum of rank one matrices as
+                                                r
+                                                X
+                                          A=          σi ui viT .
+                                                i=1
+
+Geometrically, each point is decomposed in A into its components along each of the r
+orthogonal directions given by the vi . We will also prove this algebraically. We begin
+with a simple lemma that two matrices A and B are identical if Av = Bv for all v.
+
+Lemma 3.3 Matrices A and B are identical if and only if for all vectors v, Av = Bv.
+
+Proof: Clearly, if A = B then Av = Bv for all v. For the converse, suppose that
+Av = Bv for all v. Let ei be the vector that is all zeros except for the ith component
+which has value one. Now Aei is the ith column of A and thus A = B if for each i,
+Aei = Bei .
+
+Theorem 3.4 Let A be an n × d matrix with right-singular vectors v1 , v2 , . . . , vr , left-
+singular vectors u1 , u2 , . . . , ur , and corresponding singular values σ1 , σ2 , . . . , σr . Then
+                                                r
+                                                X
+                                          A=          σi ui viT .
+                                                i=1
+
+                                                                r
+                                                                      σi ui viT by vj results in equality.
+                                                                P
+Proof: We first show that multiplying both A and
+                                                                i=1
+
+                                   r
+                                   X
+                                         σi ui viT vj = σj uj = Avj
+                                   i=1
+
+Since any vector v can be expressed as a linear combination of the singular vectors
+                                             r
+                                               σi ui viT v for all v and by Lemma 3.3,
+                                             P
+plus a vector perpendicular to the vi , Av =
+                                                        i=1
+      r
+            σi ui viT .
+      P
+A=
+      i=1
+
+
+   The decomposition A = i σi ui viT is called the singular value decomposition, SVD,
+                               P
+of A. We can rewrite this equation in matrix notation as A = U DV T where ui is the ith
+column of U , viT is the ith row of V T , and D is a diagonal matrix with σi as the ith entry
+
+                                                  46
+
+
+--- PAGE BREAK ---
+
+                                                            D       VT
+                                                           r×r     r×d
+                       A                    U
+                      n×d            =     n×r
+
+
+
+
+                Figure 3.2: The SVD decomposition of an n × d matrix.
+
+
+on its diagonal. For any matrix A, the sequence of singular values is unique and if the
+singular values are all distinct, then the sequence of singular vectors is unique up to signs.
+However, when some set of singular values are equal, the corresponding singular vectors
+span some subspace. Any set of orthonormal vectors spanning this subspace can be used
+as the singular vectors.
+
+3.5    Best Rank-k Approximations
+
+   Let A be an n × d matrix and think of the rows of A as n points in d-dimensional
+space. Let
+                                     X r
+                                 A=       σi ui viT
+                                                i=1
+
+be the SVD of A. For k ∈ {1, 2, . . . , r}, let
+                                                k
+                                                X
+                                         Ak =          σi ui viT
+                                                i=1
+
+be the sum truncated after k terms. It is clear that Ak has rank k. We show that Ak
+is the best rank k approximation to A, where error is measured in the Frobenius norm.
+Geometrically, this says that v1 , . . . , vk define the k-dimensional space minimizing the
+sum of squared distances of the points to the space. To see why, we need the following
+lemma.
+
+Lemma 3.5 The rows of Ak are the projections of the rows of A onto the subspace Vk
+spanned by the first k singular vectors of A.
+
+Proof: Let a be an arbitrary row vector.
+                                   Pk Since the      vi are orthonormal, the projection
+                                                   T
+of the vector a onto Vk is given by i=1 (a · vi )vi . Thus, the matrix whose rows are
+
+                                                  47
+
+
+--- PAGE BREAK ---
+
+the projections of the rows of A onto Vk is given by ki=1 Avi viT . This last expression
+                                                        P
+simplifies to
+                            Xk           Xk
+                                      T
+                                Avi vi =     σi ui vi T = Ak .
+                             i=1            i=1
+
+
+
+
+Theorem 3.6 For any matrix B of rank at most k
+
+                                   kA − Ak kF ≤ kA − BkF
+
+Proof: Let B minimize kA − Bk2F among all rank k or less matrices. Let V be the space
+spanned by the rows of B. The dimension of V is at most k. Since B minimizes kA − Bk2F ,
+it must be that each row of B is the projection of the corresponding row of A onto V :
+Otherwise replace the row of B with the projection of the corresponding row of A onto
+V . This still keeps the row space of B contained in V and hence the rank of B is still at
+most k. But it reduces kA − Bk2F , contradicting the minimality of ||A − B||F .
+
+    Since each row of B is the projection of the corresponding row of A, it follows that
+kA − Bk2F is the sum of squared distances of rows of A to V . Since Ak minimizes the
+sum of squared distance of rows of A to any k-dimensional subspace, from Theorem 3.1,
+it follows that kA − Ak kF ≤ kA − BkF .
+
+    In addition to the Frobenius norm, there is another matrix norm of interest. Consider
+an n × d matrix A and a large number of vectors where for each vector x we wish to
+compute Ax.PIt takes time O(nd) to compute each product Ax but if we approximate
+A by Ak = ki=1 σi ui vi T and approximate Ax by Ak x it requires only k dot products
+of d-dimensional vectors, followed by a sum of k n-dimensional vectors, and takes time
+O(kd + kn), which is a win provided k  min(d, n). How is the error measured? Since x
+is unknown, the approximation needs to be good for every x. So we take the maximum
+over all x of |(Ak − A)x|. Since this would be infinite if |x| could grow without bound,
+we restrict the maximum to |x| ≤ 1. Formally, we define a new norm of a matrix A by
+
+                                     ||A||2 = max |Ax|.
+                                             |x|≤1
+
+
+This is called the 2-norm or the spectral norm. Note that it equals σ1 (A).
+
+   As an application consider a large database of documents that form rows of an n × d
+matrix A. There are d terms and each document is a d-dimensional vector with one
+component for each term, which is the number of occurrences of the term in the document.
+We are allowed to “preprocess” A. After the preprocessing, we receive queries. Each
+query x is an d-dimensional vector which specifies how important each term is to the
+query. The desired answer is an n-dimensional vector which gives the similarity (dot
+product) of the query to each document in the database, namely Ax, the “matrix-vector”
+
+                                            48
+
+
+--- PAGE BREAK ---
+
+product. Query time is to be much less than preprocessing time, since the idea is that we
+need to answer many queries for the same database. There are many other applications
+where one performs many matrix vector products with the same matrix. This technique
+is applicable to these situations as well.
+
+3.6     Left Singular Vectors
+The left singular vectors are also pairwise orthogonal. Intuitively if ui and uj , i < j, were
+not orthogonal, one would suspect that the right singular vector vj had a component of vi
+which would contradict that vi and vj were orthogonal. Let i be the smallest integer such
+that ui is not orthogonal to all other uj . Then to prove that ui and uj are orthogonal,
+we add a small component of vj to vi , normalize the result to be a unit vector
+                                                   vi + vj
+                                          vi0 =
+                                                  |vi + vj |
+
+and show that |Avi0 | > |Avi |, a contradiction.
+
+Theorem 3.7 The left singular vectors are pairwise orthogonal.
+
+Proof: Let i be the smallest integer such that ui is not orthogonal to some other uj .
+Without loss of generality assume that uTi uj = δ > 0. If ui T uj < 0 then just replace ui
+with −ui . Clearly j > i since i was selected to be the smallest such index. For ε > 0, let
+                                                   vi + vj
+                                          vi0 =               .
+                                                  |vi + vj |
+
+Notice that vi0 is a unit-length vector.
+                                                  σi ui + εσj uj
+                                       Avi0 =        √
+                                                       1 + ε2
+has length at least as large as its component along ui which is
+                          
+        T   σi ui + εσj uj                      2
+                                                          2               3
+       ui      √             > (σi + εσj δ) 1 − ε2 > σi − ε2 σi + εσj δ − ε2 σj δ > σi ,
+                 1 + ε2
+for sufficiently small , a contradiction since vi + εvj is orthogonal to v1 , v2 , . . . , vi−1 since
+j > i and σi is defined to be the maximum of |Av| over such vectors.
+
+   Next we prove that Ak is the best rank k, 2-norm approximation to A. We first show
+that the square of the 2-norm of A − Ak is the square of the (k + 1)st singular value of A.
+This is essentially by definition of Ak ; that is, Ak represents the projections of the rows in
+A onto the space spanned by the top k singular vectors, and so A − Ak is the remaining
+portion of those rows, whose top singular value will be σk+1 .
+
+Lemma 3.8 kA − Ak k22 = σk+1
+                         2
+                             .
+
+                                                   49
+
+
+--- PAGE BREAK ---
+
+                     r                                                                                                k
+                           σi ui vi T be the singular value decomposition of A. Then Ak =                                   σi ui vi T
+                     P                                                                                                P
+Proof: Let A =
+                     i=1                                                                                              i=1
+                    r
+                                    T
+                    P
+and A − Ak =               σi ui vi . Let v be the top singular vector of A − Ak . Express v as a
+                   i=k+1
+                                                                                       r
+                                                                                       P
+linear combination of v1 , v2 , . . . , vr . That is, write v =                              cj vj . Then
+                                                                                       j=1
+
+                                              r
+                                              X                     r
+                                                                    X                   r
+                                                                                        X
+                                                                T
+                   |(A − Ak )v| =                    σi ui vi             cj vj =               ci σi ui vi T vi
+                                          i=k+1                     j=1                 i=k+1
+                                                                     v
+                                              r
+                                                                     u r 2 2
+                                              X                      uX
+                                    =                ci σi ui       =t   ci σi ,
+                                          i=k+1                            i=k+1
+
+
+since the ui are orthonormal. The v maximizing this last quantity, subject to the con-
+                    r
+straint that |v|2 =   c2i = 1, occurs when ck+1 = 1 and the rest of the ci are zero. Thus,
+                    P
+                        i=1
+kA − Ak k22 = σk+1
+               2
+                   proving the lemma.
+
+    Finally, we prove that Ak is the best rank k, 2-norm approximation to A:
+
+Theorem 3.9 Let A be an n × d matrix. For any matrix B of rank at most k
+
+                                              kA − Ak k2 ≤ kA − Bk2 .
+
+Proof: If A is of rank k or less, the theorem is obviously true since kA − Ak k2 = 0.
+Assume that A is of rank greater than k. By Lemma 3.8, kA − Ak k22 = σk+1      2
+                                                                                  . The null
+space of B, the set of vectors v such that Bv = 0, has dimension at least d − k. Let
+v1 , v2 , . . . , vk+1 be the first k + 1 singular vectors of A. By a dimension argument, it
+follows that there exists a z 6= 0 in
+
+                                    Null (B) ∩ Span {v1 , v2 , . . . , vk+1 } .
+
+Scale z to be of length one.
+
+                                              kA − Bk22 ≥ |(A − B) z|2 .
+Since Bz = 0,
+                                                    kA − Bk22 ≥ |Az|2 .
+Since z is in the Span {v1 , v2 , . . . , vk+1 }
+             n                  2       n                            k+1                               k+1
+       2
+             X
+                           T
+                                        X                  2        X                  2             X            2
+  |Az| =           σi ui vi z       =         σi2      T
+                                                    vi z        =          σi2     T
+                                                                                 vi z           2
+                                                                                             ≥ σk+1           vi T z = σk+1
+                                                                                                                        2
+                                                                                                                            .
+             i=1                        i=1                          i=1                               i=1
+
+
+It follows that kA − Bk22 ≥ σk+1
+                             2
+                                 proving the theorem.
+
+                                                                50
+
+
+--- PAGE BREAK ---
+
+   For a square symmetric matrix A and eigenvector v, Av = λv. We now prove the
+analog for singular values and vectors we discussed in the introduction.
+Lemma 3.10 (Analog of eigenvalues and eigenvectors)
+                                       Avi = σi ui and AT ui = σi vi .
+Proof: The first equation follows from the definition
+                                                 P of left singular vectors. For the
+second, note that from the SVD, we get AT ui = j σj vj uj T ui , where since the uj are
+orthonormal, all terms in the summation are zero except for j = i.
+
+3.7       Power Method for Singular Value Decomposition
+    Computing the singular value decomposition is an important branch of numerical
+analysis in which there have been many sophisticated developments over a long period of
+time. The reader is referred to numerical analysis texts for more details. Here we present
+an “in-principle” method to establish that the approximate SVD of a matrix A can be
+computed in polynomial time. The method we present, called the power method, is simple
+and is inPfact the conceptual starting point for many algorithms. Let A be a matrix whose
+SVD is i σi ui vi T . We wish to work with a matrix that is square and symmetric. Let
+B = AT A. By direct multiplication, using the orthogonality of the ui ’s that was proved
+in Theorem 3.7,
+                                                      !             !
+                                        X               X
+                         B = AT A =         σi vi uTi     σj uj vjT
+                                                        i                          j
+                                      X                                      X
+                                  =         σi σj vi (uTi · uj )vjT =                   σi2 vi viT .
+                                      i,j                                          i
+
+The matrix B is square    Pand2 symmetric,   and has the same left and right-singular vectors.
+                                      T      2
+In particular, Bvj = ( i σi vi vi )vj = σj vj , so vj is an eigenvector of B with eigenvalue
+σj2 . If A is itself square  and symmetric, it will have the same right and left-singular vec-
+                         σi vi vi T and computing B is unnecessary.
+                      P
+tors, namely A =
+                        i
+
+      Now consider computing B 2 .
+                                               !                         !
+                            X                      X                             X
+                   B2 =           σi2 vi viT                σj2 vj vjT       =           σi2 σj2 vi (vi T vj )vj T
+                              i                     j                              ij
+
+                                                                                                                     r
+When i 6= j, the dot product vi T vj is zero by orthogonality.9 Thus, B 2 =                                                σi4 vi vi T . In
+                                                                                                                     P
+                                                                                                                     i=1
+computing the k th power of B, all the cross product terms are zero and
+                                                            r
+                                                            X
+                                               Bk =               σi2k vi vi T .
+                                                            i=1
+  9
+      The “outer product” vi vj T is a matrix and is not zero even for i 6= j.
+
+
+                                                               51
+
+
+--- PAGE BREAK ---
+
+If σ1 > σ2 , then the first term in the summation dominates, so B k → σ12k v1 v1 T . This
+means a close estimate to v1 can be computed by simply taking the first column of B k
+and normalizing it to a unit vector.
+
+3.7.1       A Faster Method
+    A problem with the above method is that A may be a very large, sparse matrix, say a
+10 × 108 matrix with 109 non-zero entries. Sparse matrices are often represented by just
+  8
+
+a list of non-zero entries, say a list of triples of the form (i, j, aij ). Though A is sparse, B
+need not be and in the worse case may have all 1016 entries non-zero10 and it is then impos-
+sible to even write down B, let alone compute the product B 2 . Even if A is moderate in
+size, computing matrix products is costly in time. Thus, a more efficient method is needed.
+
+   Instead of computing B k , select a random vector x and compute the product B k x.
+The vector x can be expressed in terms of the singular vectors of B augmented to a full
+                         d
+                         P
+orthonormal basis as x =    ci vi . Then
+                                   i=1
+
+                                                              d
+                                                             X             
+                                   k
+                               B       x ≈ (σ12k v1 v1 T )          ci vi       = σ12k c1 v1 .
+                                                              i=1
+
+
+Normalizing the resulting vector yields v1 , the first singular vector of A. The way B k x
+is computed is by a series of matrix vector products, instead of matrix products. B k x =
+AT A . . . AT Ax, which can be computed right-to-left. This consists of 2k vector times
+sparse matrix multiplications.
+
+    To compute k singular vectors, one selects a random vector r and finds an orthonormal
+basis for the space spanned by r, Ar, . . . , Ak−1 r. Then compute A times each of the basis
+vectors, and find an orthonormal basis for the space spanned by the resulting vectors.
+Intuitively, one has applied A to a subspace rather than a single vector. One repeat-
+edly applies A to the subspace, calculating an orthonormal basis after each application
+to prevent the subspace collapsing to the one dimensional subspace spanned by the first
+singular vector. The process quickly converges to the first k singular vectors.
+
+    An issue occurs if there is no significant gap between the first and second singular
+values of a matrix. Take for example the case when there is a tie for the first singular
+vector and σ1 = σ2 . Then, the above argument fails. We will overcome this hurdle.
+Theorem 3.11 below states that even with ties, the power method converges to some
+vector in the span of those singular vectors corresponding to the “nearly highest” singular
+values. The theorem assumes it is given a vector x which has a component of magnitude
+at least δ along the first right singular vector v1 of A. We will see in Lemma 3.12 that a
+random vector satisfies this condition with fairly high probability.
+  10
+       E.g., suppose each entry in the first row of A is non-zero and the rest of A is zero.
+
+
+                                                             52
+
+
+--- PAGE BREAK ---
+
+Theorem 3.11 Let A be an n×d matrix and x a unit length vector in Rd with |xT v1 | ≥ δ,
+where δ > 0. Let V be the space spanned by the right singular vectors of A corresponding
+to singular values greater than (1 − ε) σ1 . Let w be the unit vector after k = ln(1/εδ)
+                                                                                    2ε
+iterations of the power method, namely,
+                                                                k
+                                                        AT A         x
+                                                  w=                     .
+                                                       (AT A)k x
+
+Then w has a component of at most ε perpendicular to V .
+
+Proof: Let                                             r
+                                                       X
+                                                  A=         σi ui viT
+                                                       i=1
+
+be the SVD of A. If the rank of A is less than d, then for convenience complete
+{v1 , v2 , . . . vr } into an orthonormal basis {v1 , v2 , . . . vd } of d-space. Write x in the basis
+of the vi ’s as
+                                                 Xd
+                                            x=        c i vi .
+                                                        i=1
+                       d                                                           d
+Since (AT A)k =              σi2k vi viT , it follows that (AT A)k x =                   σi2k ci vi . By hypothesis,
+                       P                                                           P
+                       i=1                                                         i=1
+|c1 | ≥ δ.
+
+    Suppose that σ1 , σ2 , . . . , σm are the singular values of A that are greater than or equal
+to (1 − ε) σ1 and that σm+1 , . . . , σd are the singular values that are less than (1 − ε) σ1 .
+Now
+                                       d          2    d
+                                      X               X
+                   T      k 2              2k
+                |(A A) x| =               σi ci vi =      σi4k c2i ≥ σ14k c21 ≥ σ14k δ 2 .
+                                            i=1                i=1
+                             T      k   2
+The component of |(A A) x| perpendicular to the space V is
+                           d
+                           X                                   d
+                                                               X
+                                   σi4k c2i ≤ (1 − ε)4k σ14k             c2i ≤ (1 − ε)4k σ14k
+                           i=m+1                               i=m+1
+
+
+since di=1 c2i = |x| = 1. Thus, the component of w perpendicular to V has squared
+      P
+                (1−ε)4k σ 4k
+length at most σ4k δ2 1 and so its length is at most
+                       1
+
+
+                                   (1 − ε)2k σ12k   (1 − ε)2k   e−2kε
+                                                  =           ≤       =ε
+                                       δσ12k            δ         δ
+
+since k = ln(1/δ)
+             2
+                   .
+
+
+                                                         53
+
+
+--- PAGE BREAK ---
+
+Lemma 3.12 Let y ∈ Rn be a random vector with the unit variance spherical Gaussian
+as its probability density. Normalize y to be a unit length vector by setting x = y/|y|. Let
+v be any unit length vector. Then
+                                               
+                                            1         1
+                                   T
+                           Prob |x v| ≤ √          ≤     + 3e−d/96 .
+                                          20 d        10
+                                                                          
+Proof: Proving for the unit length vector x that Prob |xT v| ≤ 201√d ≤ 10      1
+                                                                                 + 3e−d/96 is
+                                                                           √
+equivalent to proving for the unnormalized vector
+                                               √     y that Prob(|y| ≥ 2 d) ≤ 3e−d/96 and
+Prob(|y v| ≤ 10 ) ≤ 1/10. That Prob(|y| ≥ 2 d) is at most 3e−d/96 follows from Theorem
+         T       1
+           √                                                     1
+2.9 with d substituted for β. The probability that |yT v| ≤ 10       is at most 1/10 because
+  T
+                                                                                  √
+y v is a random, zero mean, unit variance Gaussian with density at most 1/ 2π ≤ 1/2
+in the interval [−1/10, 1/10], so the integral of the Gaussian over the interval is at most
+1/10.
+
+3.8       Singular Vectors and Eigenvectors
+    For a square matrix B, if Bx = λx, then x is an eigenvector of B and λ is the corre-
+sponding eigenvalue. We saw in Section 3.7, if B = AT A, then the right singular vectors
+vj of A are eigenvectors of B with eigenvalues σj2 . The same argument shows that the left
+singular vectors uj of A are eigenvectors of AAT with eigenvalues σj2 .
+
+   The matrixPB = AT A has the property that for any vector x, xT Bx ≥ 0. This is
+                     2       T
+because B =       i σi vi vi   and for any x, xT vi vi T x = (xT vi )2 ≥ 0. A matrix B with
+the property that xT Bx ≥ 0 for all x is called positive semi-definite. Every matrix of
+the form AT A is positive semi-definite. In the other direction, any positive semi-definite
+matrix B can be decomposed into a product AT A, and so its eigenvalue decomposition
+can be obtained from the singular value decomposition of A. The interested reader should
+consult a linear algebra book.
+
+3.9       Applications of Singular Value Decomposition
+3.9.1      Centering Data
+     Singular value decomposition is used in many applications and for some of these ap-
+plications it is essential to first center the data by subtracting the centroid of the data
+from each data point.11 If you are interested in the statistics of the data and how it varies
+in relationship to its mean, then you would center the data. On the other hand, if you
+are interested in finding the best low rank approximation to a matrix, then you do not
+center the data. The issue is whether you are finding the best fitting subspace or the best
+fitting affine space. In the latter case you first center the data and then find the best
+fitting subspace. See Figure 3.3.
+
+ 11
+      The centroid of a set of points is the coordinate-wise average of the points.
+
+
+                                                     54
+
+
+--- PAGE BREAK ---
+
+Figure 3.3: If one wants statistical information relative to the mean of the data, one
+needs to center the data. If one wants the best low rank approximation, one would not
+center the data.
+
+    We first show that the line minimizing the sum of squared distances to a set of points,
+if not restricted to go through the origin, must pass through the centroid of the points.
+This implies that if the centroid is subtracted from each data point, such a line will pass
+through the origin. The best fit line can be generalized to k dimensional “planes”. The
+operation of subtracting the centroid from all data points is useful in other contexts as
+well. We give it the name “centering data”.
+Lemma 3.13 The best-fit line (minimizing the sum of perpendicular distances squared)
+of a set of data points must pass through the centroid of the points.
+
+Proof: Subtract the centroid from each data point so that the centroid is 0. After
+centering the data let ` be the best-fit line and assume for contradiction that ` does
+not pass through the origin. The line ` can be written as {a + λv|λ ∈ R}, where a is
+the closest point to 0 on ` and v is a unit length vector in the direction of `, which is
+perpendicular to a. For a data point ai , let dist(ai , `) denote its perpendicular distance to
+`. By the Pythagorean theorem, we have |ai − a|2 = dist(ai , `)2 + (v · ai )2 , or equivalently,
+dist(ai , `)2 = |ai − a|2 − (v · ai )2 . Summing over all data points:
+   n
+   X                        n
+                            X                                               n
+                                                                            X
+                       2                     2                  2
+                                                                                  |ai |2 + |a|2 − 2ai · a − (v · ai )2
+                                                                                                                        
+          dist(ai , `) =          |ai − a| − (v · ai )                  =
+    i=1                     i=1                                             i=1
+        n
+                                                      !       n
+        X                               X                     X                     X                        X
+    =           |ai |2 + n|a|2 − 2a ·            ai       −         (v · ai )2 =          |ai |2 + n|a|2 −    (v · ai )2 ,
+          i=1                            i                    i=1                     i                       i
+                                                                                  P
+where we used the fact that since the centroid is 0, i ai = 0. The above expression is
+minimized when a = 0, so the line `0 = {λv : λ ∈ R} through the origin is a better fit
+than `, contradicting ` being the best-fit line.
+
+   A statement analogous to Lemma 3.13 holds for higher dimensional objects. Define
+an affine space as a subspace translated by a vector. So an affine space is a set of the
+
+                                                               55
+
+
+--- PAGE BREAK ---
+
+form
+                                       k
+                                       X
+                               {v0 +         ci vi |c1 , c2 , . . . , ck ∈ R}.
+                                       i=1
+
+Here, v0 is the translation and v1 , v2 , . . . , vk form an orthonormal basis for the subspace.
+
+Lemma 3.14 The k dimensional affine space which minimizes the sum of squared per-
+pendicular distances to the data points must pass through the centroid of the points.
+
+Proof: We only give a brief idea of the P proof, which is similar to the previous lemma.
+Instead of (v · ai )2 , we will now have kj=1 (vj · ai )2 , where the vj , j = 1, 2, . . . , k are an
+orthonormal basis of the subspace through the origin parallel to the affine space.
+
+3.9.2    Principal Component Analysis
+     The traditional use of SVD is in Principal Component Analysis (PCA). PCA is il-
+lustrated by a movie recommendation setting where there are n customers and d movies.
+Let matrix A with elements aij represent the amount that customer i likes movie j. One
+hypothesizes that there are only k underlying basic factors that determine how much a
+given customer will like a given movie, where k is much smaller than n or d. For example,
+these could be the amount of comedy, drama, and action, the novelty of the story, etc.
+Each movie can be described as a k-dimensional vector indicating how much of these ba-
+sic factors the movie has, and each customer can be described as a k-dimensional vector
+indicating how important each of these basic factors is to that customer. The dot-product
+of these two vectors is hypothesized to determine how much that customer will like that
+movie. In particular, this means that the n × d matrix A can be expressed as the product
+of an n×k matrix U describing the customers and a k ×d matrix V describing the movies.
+Finding the best rank k approximation Ak by SVD gives such a U and V . One twist is
+that A may not be exactly equal to U V , in which case A − U V is treated as noise. An-
+other issue is that SVD gives a factorization with negative entries. Non-negative matrix
+factorization (NMF) is more appropriate in some contexts where we want to keep entries
+non-negative. NMF is discussed in Chapter 9
+
+    In the above setting, A was available fully and we wished to find U and V to identify
+the basic factors. However, in a case such as movie recommendations, each customer may
+have seen only a small fraction of the movies, so it may be more natural to assume that we
+are given just a few elements of A and wish to estimate A. If A was an arbitrary matrix
+of size n × d, this would require Ω(nd) pieces of information and cannot be done with a
+few entries. But again hypothesize that A was a small rank matrix with added noise. If
+now we also assume that the given entries are randomly drawn according to some known
+distribution, then there is a possibility that SVD can be used to estimate the whole of A.
+This area is called collaborative filtering and one of its uses is to recommend movies or to
+target an ad to a customer based on one or two purchases. We do not describe it here.
+
+
+
+                                                    56
+
+
+--- PAGE BREAK ---
+
+                                                         factors
+                                                                
+                                                                
+                                                                
+                        
+                        
+                                                
+                                                
+                                                                   
+                                                                         movies
+                                                                                        
+                                                                
+                                                                
+              customers 
+                                    A         =
+                                                         U       
+                                                                            V          
+                                                                
+                                                                
+                                                                
+                                                                
+                                                                
+
+
+
+                               Figure 3.4: Customer-movie data
+
+
+3.9.3    Clustering a Mixture of Spherical Gaussians
+    Clustering is the task of partitioning a set of points into k subsets or clusters where
+each cluster consists of nearby points. Different definitions of the quality of a clustering
+lead to different solutions. Clustering is an important area which we will study in detail
+in Chapter 7. Here we will see how to solve a particular clustering problem using singular
+value decomposition.
+
+    Mathematical formulations of clustering tend to have the property that finding the
+highest quality solution to a given set of data is NP-hard. One way around this is to
+assume stochastic models of input data and devise algorithms to cluster data generated by
+such models. Mixture models are a very important class of stochastic models. A mixture
+is a probability density or distribution that is the weighted sum of simple component
+probability densities. It is of the form
+
+                                  f = w1 p1 + w2 p2 + · · · + wk pk ,
+
+where p1 , p2 , . . . , pk are the basic probability densities and w1 , w2 , . . . , wk are positive real
+numbers called mixture weights that add up to one. Clearly, f is a probability density
+and integrates to one.
+
+    The model fitting problem is to fit a mixture of k basic densities to n independent,
+identically distributed samples, each sample drawn according to the same mixture dis-
+tribution f . The class of basic densities is known, but various parameters such as their
+means and the component weights of the mixture are not. Here, we deal with the case
+where the basic densities are all spherical Gaussians. There are two equivalent ways of
+thinking of the hidden sample generation process:
+
+   1. Pick each sample according to the density f on Rd .
+
+
+                                                   57
+
+
+--- PAGE BREAK ---
+
+   2. Pick a random i from {1, 2, . . . , k} where probability of picking i is wi . Then, pick
+      a sample according to the density pi .
+One approach to the model-fitting problem is to break it into two subproblems:
+   1. First, cluster the set of samples into k clusters C1 , C2 , . . . , Ck , where Ci is the set of
+      samples generated according to pi (see (2) above) by the hidden generation process.
+   2. Then fit a single Gaussian distribution to each cluster of sample points.
+   The second problem is relatively easier and indeed we saw the solution in Chapter
+2, where we showed that taking the empirical mean (the mean of the sample) and the
+empirical standard deviation gives us the best-fit Gaussian. The first problem is harder
+and this is what we discuss here.
+
+    If the component Gaussians in the mixture have their centers very close together, then
+the clustering problem is unresolvable. In the limiting case where a pair of component
+densities are the same, there is no way to distinguish between them. What condition on
+the inter-center separation will guarantee unambiguous clustering? First, by looking at
+1-dimensional examples, it is clear that this separation should be measured in units of the
+standard deviation, since the density is a function of the number of standard deviation
+from the mean. In one dimension, if two Gaussians have inter-center separation at least
+six times the maximum of their standard deviations, then they hardly overlap. This is
+summarized in the question: How many standard deviations apart are the means? In one
+dimension, if the answer is at least six, we can easily tell the Gaussians apart. What is
+the analog of this in higher dimensions?
+
+    We discussed in Chapter 2 distances between two sample points from the same Gaus-
+sian as well the distance between two sample points from two different Gaussians. Recall
+from that discussion that if
+    • If x and y are two independent samples from the same spherical Gaussian with
+      standard deviation12 σ then
+                                            √        2
+                                |x − y|2 ≈ 2 d ± O(1) σ 2 .
+
+    • If x and y are samples from different spherical Gaussians each of standard deviation
+      σ and means separated by distance ∆, then
+                                             √         2
+                               |x − y|2 ≈ 2 d ± O(1) σ 2 + ∆2 .
+
+To ensure that points from the same Gaussian are closer to each other than points from
+different Gaussians, we need
+                         √        2            √           2
+                      2 d − O(1) σ 2 + ∆2 > 2 d + O(1) σ 2 .
+  12
+    Since a spherical Gaussian has the same standard deviation in every direction, we call it the standard
+deviation of the Gaussian.
+
+
+                                                   58
+
+
+--- PAGE BREAK ---
+
+Expanding the squares, the high order term 2d cancels and we need that
+
+                                            ∆ > cd1/4 ,
+
+for some constant c. While this was not a completely rigorous argument, it can be used to
+show that a distance based clustering approach (see Chapter 2 for an example) requires an
+inter-mean separation of at least cd1/4 standard deviations to succeed, thus unfortunately
+not keeping with mnemonic of a constant number of standard deviations separation of
+the means. Here, indeed, we will show that Ω(1) standard deviations suffice provided the
+number k of Gaussians is O(1).
+
+   The central idea is the following. Suppose we can find the subspace spanned by the
+k centers and project the sample points to this subspace. The projection of a spherical
+Gaussian with standard deviation σ remains a spherical Gaussian with standard deviation
+σ (Lemma 3.15). In the projection, the inter-center separation remains the same. So in
+the projection, the Gaussians are distinct provided the inter-center separation in the whole
+space is at least ck 1/4 σ which is less than cd1/4 σ for k  d. Interestingly, we will see that
+the subspace spanned by the k-centers is essentially the best-fit k-dimensional subspace
+that can be found by singular value decomposition.
+
+Lemma 3.15 Suppose p is a d-dimensional spherical Gaussian with center µ and stan-
+dard deviation σ. The density of p projected onto a k-dimensional subspace V is a spherical
+Gaussian with the same standard deviation.
+
+Proof: Rotate the coordinate system so V is spanned by the first k coordinate vectors.
+The Gaussian remains spherical with standard deviation σ although the coordinates of
+its center have changed. For a point x = (x1 , x2 , . . . , xd ), we will use the notation x0 =
+(x1 , x2 , . . . xk ) and x00 = (xk+1 , xk+2 , . . . , xn ). The density of the projected Gaussian at
+the point (x1 , x2 , . . . , xk ) is
+                                    |x0 −µ0 |2     |x00 −µ00 |2         |x0 −µ0 |2
+                                               Z
+                                  −
+                              ce        2σ 2
+                                                 e− 2σ2 dx00 = c0 e− 2σ2 .
+                                      x00
+
+This implies the lemma.
+
+   We now show that the top k singular vectors produced by the SVD span the space of
+the k centers. First, we extend the notion of best fit to probability distributions. Then
+we show that for a single spherical Gaussian whose center is not the origin, the best fit
+1-dimensional subspace is the line though the center of the Gaussian and the origin. Next,
+we show that the best fit k-dimensional subspace for a single Gaussian whose center is not
+the origin is any k-dimensional subspace containing the line through the Gaussian’s center
+and the origin. Finally, for k spherical Gaussians, the best fit k-dimensional subspace is
+the subspace containing their centers. Thus, the SVD finds the subspace that contains
+the centers.
+
+
+                                                 59
+
+
+--- PAGE BREAK ---
+
+                                                1. The best fit 1-dimension subspace
+                                                   to a spherical Gaussian is the line
+                                                   through its center and the origin.
+
+                                                2. Any k-dimensional subspace contain-
+                                                   ing the line is a best fit k-dimensional
+                                                   subspace for the Gaussian.
+
+                                                3. The best fit k-dimensional subspace
+                                                   for k spherical Gaussians is the sub-
+                                                   space containing their centers.
+
+
+
+
+                 Figure 3.5: Best fit subspace to a spherical Gaussian.
+
+
+   Recall that for a set of points, the best-fit line is the line passing through the origin
+that maximizes the sum of squared lengths of the projections of the points onto the line.
+We extend this definition to probability densities instead of a set of points.
+
+Definition 3.1 If p is a probability density in d space, the best fit line for p is the line in
+the v1 direction where
+                              v1 = arg max E (vT x)2 .
+                                                         
+                                          |v|=1 x∼p
+
+
+
+
+   For a spherical Gaussian centered at the origin, it is easy to see that any line passing
+through the origin is a best fit line. Our next lemma shows that the best fit line for a
+spherical Gaussian centered at µ 6= 0 is the line passing through µ and the origin.
+
+Lemma 3.16 Let the probability density p be a spherical Gaussian with center µ 6= 0.
+The unique best fit 1-dimensional subspace is the line passing through µ and the origin.
+If µ = 0, then any line through the origin is a best-fit line.
+
+
+
+
+                                              60
+
+
+--- PAGE BREAK ---
+
+Proof: For a randomly chosen x (according to p) and a fixed unit length vector v,
+            T 2        h                   2 i
+                            T             T
+        E (v x) = E v (x − µ) + v µ
+       x∼p           x∼p
+                         h           2                                 2 i
+                   = E vT (x − µ) + 2 vT µ vT (x − µ) + vT µ
+                                                             
+                     x∼p
+                         h           2 i                                    2
+                   = E vT (x − µ)         + 2 vT µ E vT (x − µ) + vT µ
+                                                                
+                     x∼p
+                         h           2 i         2
+                   = E vT (x − µ)         + vT µ
+                     x∼p
+                               2
+                   = σ 2 + vT µ
+where the fourth line follows from the fact that E[vT (x − µ)] = 0, and the fifth line
+follows from the fact that E[(vT (x − µ))2 ] is the variance in the direction v. The best fit
+                                                                 2
+line v maximizes Ex∼p [(vT x)2 ] and therefore maximizes vT µ . This is maximized when
+v is aligned with the center µ. To see uniqueness, just note that if µ 6= 0, then vT µ is
+strictly less when v is not aligned with the center.
+
+   We now extend Definition 3.1 to k-dimensional subspaces.
+Definition 3.2 If p is a probability density in d-space then the best-fit k-dimensional
+subspace Vk is
+                          Vk = argmax E |proj(x, V )|2 ,
+                                                         
+                                     V      x∼p
+                                  dim(V )=k
+
+where proj(x, V ) is the orthogonal projection of x onto V .
+
+Lemma 3.17 For a spherical Gaussian with center µ, a k-dimensional subspace is a best
+fit subspace if and only if it contains µ.
+
+Proof: If µ = 0, then by symmetry any k-dimensional subspace is a best-fit subspace. If
+µ 6= 0, then, the best-fit line must pass through µ by Lemma 3.16. Now, as in the greedy
+algorithm for finding subsequent singular vectors, we would project perpendicular to the
+first singular vector. But after the projection, the mean of the Gaussian becomes 0 and
+any vectors will do as subsequent best-fit directions.
+
+This leads to the following theorem.
+
+Theorem 3.18 If p is a mixture of k spherical Gaussians, then the best fit k-dimensional
+subspace contains the centers. In particular, if the means of the Gaussians are linearly
+independent, the space spanned by them is the unique best-fit k dimensional subspace.
+
+Proof: Let p be the mixture w1 p1 +w2 p2 +· · ·+wk pk . Let V be any subspace of dimension
+k or less. Then,
+                                                   k
+                                                   X
+                                       2
+                                                                 |proj(x, V )|2
+                                                                                 
+                       E |proj(x, V )|         =         wi E
+                      x∼p                                 x∼pi
+                                                   i=1
+
+
+                                                   61
+
+
+--- PAGE BREAK ---
+
+If V contains the centers of the densities pi , by Lemma 3.17, each term in the summation
+is individually maximized, which implies the entire summation is maximized, proving the
+theorem.
+
+    For an infinite set of points drawn according to the mixture, the k-dimensional SVD
+subspace gives exactly the space of the centers. In reality, we have only a large number
+of samples drawn according to the mixture. However, it is intuitively clear that as the
+number of samples increases, the set of sample points will approximate the probability
+density and so the SVD subspace of the sample will be close to the space spanned by
+the centers. The details of how close it gets as a function of the number of samples are
+technical and we do not carry this out here.
+
+3.9.4   Ranking Documents and Web Pages
+    An important task for a document collection is to rank the documents according to
+their intrinsic relevance to the collection. A good candidate definition of “intrinsic rele-
+vance” is a document’s projection onto the best-fit direction for that collection, namely the
+top left-singular vector of the term-document matrix. An intuitive reason for this is that
+this direction has the maximum sum of squared projections of the collection and so can be
+thought of as a synthetic term-document vector best representing the document collection.
+
+    Ranking in order of the projection of each document’s term vector along the best fit
+direction has a nice interpretation in terms of the power method. For this, we consider
+a different example, that of the web with hypertext links. The World Wide Web can
+be represented by a directed graph whose nodes correspond to web pages and directed
+edges to hypertext links between pages. Some web pages, called authorities, are the most
+prominent sources for information on a given topic. Other pages called hubs, are ones
+that identify the authorities on a topic. Authority pages are pointed to by many hub
+pages and hub pages point to many authorities. One is led to what seems like a circular
+definition: a hub is a page that points to many authorities and an authority is a page
+that is pointed to by many hubs.
+
+    One would like to assign hub weights and authority weights to each node of the web.
+If there are n nodes, the hub weights form an n-dimensional vector u and the authority
+weights form an n-dimensional vector v. Suppose A is the adjacency matrix representing
+the directed graph. Here aij is 1 if there is a hypertext link from page i to page j and 0
+otherwise. Given hub vector u, the authority vector v could be computed by the formula
+                                              d
+                                              X
+                                       vj ∝         ui aij
+                                              i=1
+
+since the right hand side is the sum of the hub weights of all the nodes that point to node
+j. In matrix terms,
+                                     v = AT u/|AT u|.
+
+                                              62
+
+
+--- PAGE BREAK ---
+
+    Similarly, given an authority vector v, the hub vector u could be computed by
+u = Av/|Av|. Of course, at the start, we have neither vector. But the above discus-
+sion suggests a power iteration. Start with any v. Set u = Av, then set v = AT u, then
+renormalize and repeat the process. We know from the power method that this converges
+to the left and right-singular vectors. So after sufficiently many iterations, we may use the
+left vector u as the hub weights vector and project each column of A onto this direction
+and rank columns (authorities) in order of this projection. But the projections just form
+the vector AT u which equals a multiple of v. So we can just rank by order of the vj .
+This is the basis of an algorithm called the HITS algorithm, which was one of the early
+proposals for ranking web pages.
+
+   A different ranking called pagerank is widely used. It is based on a random walk on
+the graph described above. We will study random walks in detail in Chapter 4.
+
+3.9.5   An Illustrative Application of SVD
+    A deep neural network in which inputs images are classified by category such as cat,
+dog, or car maps an image to an activation space. The dimension of the activation space
+might be 4,000, but the set of cat images might be mapped to a much lower dimensional
+manifold. To determine the dimension of the cat manifold, we could construct a tangent
+subspace at an activation vector for a cat image. However, we only have 1,000 cat images
+and the images are spread far apart in the activation space. We need a large number of
+cat activation vectors close to each original cat activation vector to determine the dimen-
+sion of the tangent subspace. To do this we want to slightly modify each cat image to
+get many images that are close to the original. One way to do this is to do a singular
+value decomposition of an image and zero out a few very small singular values. If the
+image is 1,000 by 1,000 there will be a 1,000 singular values. The smallest 100 will be
+essentially zero and zeroing out a subset of them should not change the image    much and
+                                                                             100
+produce images whose activation vectors are very close. Since there are 10 subsets of
+ten singular values, we can generate say 10,000 such images by zeroing out ten singular
+values. Given the corresponding activation vectors, we can form a matrix of activation
+vectors and determine the rank of the matrix which should give the dimension of the
+tangent subspace to the original cat activation vector.
+
+    To determine the rank of the matrix of 10,000 activation vectors, we again do a singular
+value decomposition. To determine the actual rank, we need to determine a cutoff point
+below which we conclude the remaining singular values are noise. We might consider a
+sufficient number of the largest singular values so that their sum of squares is 95% of the
+square of the Frobenius norm of the matrix or look to see where there is a sharp drop in
+the singular values.
+
+
+
+
+                                             63
+
+
+--- PAGE BREAK ---
+
+3.9.6      An Application of SVD to a Discrete Optimization Problem
+    In clustering a mixture of Gaussians, SVD was used as a dimension reduction tech-
+nique. It found a k-dimensional subspace (the space of centers) of a d-dimensional space
+and made the Gaussian clustering problem easier by projecting the data to the subspace.
+Here, instead of fitting a model to data, we consider an optimization problem where ap-
+plying dimension reduction makes the problem easier. The use of SVD to solve discrete
+optimization problems is a relatively new subject with many applications. We start with
+an important NP-hard problem, the maximum cut problem for a directed graph G(V, E).
+
+    The maximum cut problem is to partition the nodes of an n-node directed graph into
+two subsets S and S̄ so that the number of edges from S to S̄ is maximized. Let A be
+the adjacency matrix of the graph. With each vertex i, associate an indicator variable xi .
+The variable xi will be set to 1 for i ∈ S and 0 for i ∈ S̄. The vector x = (x1 , x2 , . . . , xn )
+is unknown and we are trying to find it or equivalently the cut, so as to maximize the
+number of edges across the cut. The number of edges across the cut is precisely
+                                      X
+                                          xi (1 − xj )aij .
+                                            i,j
+
+Thus, the maximum cut problem can be posed as the optimization problem
+                          P
+                 Maximize xi (1 − xj )aij subject to xi ∈ {0, 1}.
+                                  i,j
+
+In matrix notation,             X
+                                        xi (1 − xj )aij = xT A(1 − x),
+                                 i,j
+
+where 1 denotes the vector of all 1’s . So, the problem can be restated as
+
+                        Maximize xT A(1 − x)            subject to xi ∈ {0, 1}.                 (3.1)
+
+   This problem is NP-hard. However we will see that for dense graphs, that is, graphs
+with Ω(n2 ) edges and therefore whose optimal solution has size Ω(n2 ),13 we can use the
+SVD to find a near optimal solution in polynomial Pktime. ToT do so we will begin by
+computing the SVD of A and replacing A by Ak = i=1 σi ui vi in (3.1) to get
+
+                       Maximize xT Ak (1 − x)           subject to xi ∈ {0, 1}.                 (3.2)
+
+Note that the matrix Ak is no longer a 0-1 adjacency matrix.
+
+       We will show that:
+                                                                                          2
+   1. For each 0-1 vector x, xT Ak (1 − x) and xT A(1 − x) differ by at most √nk+1 . Thus,
+      the maxima in (3.1) and (3.2) differ by at most this amount.
+  13
+     Any graph of m edges has a cut of size at least m/2. This can be seen by noting that the expected
+size of the cut for a random x ∈ {0, 1}n is exactly m/2.
+
+
+                                                   64
+
+
+--- PAGE BREAK ---
+
+   2. A near optimal x for (3.2) can be found in time nO(k) by exploiting the low rank
+      of Ak , which is polynomial time for constant k. By Item 1 this is near optimal for
+                                                                        2
+      (3.1) where near optimal means with additive error of at most √nk+1 .
+
+√ First, we prove Item 1. Since x and 1 − x are 0-1 n-vectors, √ each has length at most
+  n. By the definition of the 2-norm, |(A − Ak )(1 − x)| ≤ n||A − Ak ||2 . Now since
+xT (A − Ak )(1 − x) is the dot product of the vector x with the vector (A − Ak )(1 − x),
+
+                               |xT (A − Ak )(1 − x)| ≤ n||A − Ak ||2 .
+
+By Lemma 3.8, ||A − Ak ||2 = σk+1 (A). The inequalities,
+                                                                         X
+                           2
+                   (k + 1)σk+1 ≤ σ12 + σ22 + · · · σk+1
+                                                    2
+                                                        ≤ ||A||2F =             a2ij ≤ n2
+                                                                          i,j
+
+                   n     2                      n
+            2
+imply that σk+1 ≤ k+1 and hence ||A − Ak ||2 ≤ √k+1 proving Item 1.
+
+    Next we focus on Item 2. It is instructive to look at the special case when k=1 and A
+is approximated by the rank one matrix A1 . An even more special case when the left and
+right-singular vectors u and v are identical is already NP-hard to solve exactly because
+it subsumes the problem of whether for a set of n integers, {a1 , a2 , . . . , an }, there is a
+partition into two subsets whose sums are equal. However, for that problem, there is
+an efficient dynamic programming algorithm that finds a near-optimal solution. We will
+build on that idea for the general rank k problem.
+
+   For Item 2, we want to maximize ki=1 σi (xT ui )(vi T (1 − x)) over 0-1 vectors x. A
+                                        P
+piece of notation will be useful. For any S ⊆ {1, 2, . . . n}, write ui (S) for the sumPof coor-
+dinates of the vector ui corresponding to elements in the set S, that is, ui (S) = j∈S uij ,
+and similarly for vi . We will find S to maximize ki=1 σi ui (S)vi (S̄) using dynamic pro-
+                                                    P
+gramming.
+
+    For a subset S of {1, 2, . . . , n}, define the 2k-dimensional vector
+                                                                                    
+                    w(S) = u1 (S), v1 (S̄), u2 (S), v2 (S̄), . . . , uk (S), vk (S̄) .
+
+If we had the list of all such vectors, we could find ki=1 σi ui (S)vi (S̄) for each of them
+                                                                P
+and take the maximum. There are 2n subsets S, but several S could have the same w(S)
+and in that case it suffices to list just one of them. Round each coordinate of each ui to
+the nearest integer multiple of nk1 2 . Call the rounded vector ũi . Similarly obtain ṽi . Let
+w̃(S) denote the vector (ũ1 (S), ṽ1 (S̄), ũ2 (S), ṽ2 (S̄), . . . , ũk (S), ṽk (S̄)). We will construct
+a list of all possible values of the vector w̃(S). Again, if several different S’s lead to the
+same vector w̃(S), we will keep only one copy on the list. The list will be constructed by
+dynamic programming. For the recursive step, assume we already have a list of all such
+vectors for S ⊆ {1, 2, . . . , i} and wish to construct the list for S ⊆ {1, 2, . . . , i + 1}. Each
+
+                                                    65
+

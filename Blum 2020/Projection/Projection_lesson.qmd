@@ -1,0 +1,319 @@
+---
+title: "Random Projection and the Johnson-Lindenstrauss Lemma"
+subtitle: "Blum, Hopcroft & Kannan (2020), Section 2.7"
+author: "Posit Assistant"
+date: "May 20, 2026"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    code-fold: true
+    page-layout: full
+    self-contained: true
+execute:
+  warning: false
+  message: false
+---
+
+> **About this document.** This is a teaching document prepared by Posit Assistant.
+> It is intended to be read alongside the student's own `Projection.qmd` and `Projection.R`
+> working files, which are the primary record of their notes and code.
+
+```{r}
+#| label: setup
+#| echo: false
+source("C:/Users/dkill/OneDrive/Documents/prep (May 2025).R")
+library(tidyverse)
+```
+
+---
+
+## The Problem
+
+You have $n$ points in $\mathbb{R}^d$ where $d$ is very large — think documents
+represented as word-count vectors, or images as pixel vectors. High dimensionality
+is expensive: distances are hard to compute, nearest-neighbor search is slow, and
+storing the data takes enormous space.
+
+The natural question: can we **map points to a much lower-dimensional space** while
+approximately preserving all pairwise distances? If we can, everything downstream
+(clustering, similarity search, classification) becomes cheaper, without meaningfully
+degrading quality.
+
+The naive fear is that projection loses information irreparably. The remarkable fact
+is that **random projection works** — and the target dimension depends only on $n$
+and your tolerance for error, not on the original dimension $d$.
+
+---
+
+## Setup: The Random Projection Map
+
+The map is almost embarrassingly simple. Given $n$ points in $\mathbb{R}^d$, choose
+a $k \times d$ matrix $A$ whose entries are i.i.d. $\mathcal{N}(0, 1)$, and define:
+
+$$
+f(x) = \frac{1}{\sqrt{k}}\, A x
+$$
+
+That's it. Project each point by multiplying by a random Gaussian matrix and scaling.
+
+**Why Gaussian?** The Gaussian distribution is rotationally symmetric, which means
+the distribution of $f(x)$ doesn't depend on the direction of $x$, only its length.
+This symmetry is what makes the analysis tractable.
+
+**The scaling factor $1/\sqrt{k}$** ensures that $\mathbb{E}\|f(x)\|^2 = \|x\|^2$.
+Each coordinate of $Ax/\sqrt{k}$ has mean 0 and variance $\|x\|^2/k$, and summing
+$k$ such coordinates gives an expected squared norm of $\|x\|^2$.
+
+---
+
+## Concentration of Measure: One Vector
+
+Before proving anything about $n$ points, we need to understand what happens to
+a **single vector** $v \in \mathbb{R}^d$ under random projection.
+
+Let $r_1, \ldots, r_k$ be the rows of $A$ (each an independent random vector in
+$\mathbb{R}^d$ with i.i.d. $\mathcal{N}(0,1)$ entries). Then:
+
+$$
+\|f(v)\|^2 = \frac{1}{k} \sum_{i=1}^{k} (r_i \cdot v)^2
+$$
+
+Each term $r_i \cdot v \sim \mathcal{N}(0, \|v\|^2)$, so $(r_i \cdot v)^2 / \|v\|^2 \sim \chi^2(1)$.
+The sum $\|f(v)\|^2 / \|v\|^2$ is therefore $\frac{1}{k}$ times a $\chi^2(k)$ random variable.
+
+The mean of this quantity is 1. The question is whether it **concentrates** tightly
+around 1. It does — and this is precisely the kind of exponential concentration
+result established earlier in Chapter 2 (Theorem 2.5).
+
+::: {.callout-note}
+## Key concentration bound
+
+For any fixed unit vector $v$ and $0 < \varepsilon < 1$:
+
+$$
+P\!\left(\left|\,\|f(v)\|^2 - 1\,\right| > \varepsilon\right)
+\;\leq\; 2\, e^{-(\varepsilon^2 - \varepsilon^3)\,k/4}
+$$
+
+For small $\varepsilon$ this simplifies to approximately $2e^{-\varepsilon^2 k / 4}$.
+The probability of bad distortion decays **exponentially** in $k$.
+:::
+
+---
+
+## The Johnson-Lindenstrauss Lemma
+
+::: {.callout-important}
+## Johnson-Lindenstrauss Lemma
+
+For any $0 < \varepsilon < 1$ and any $n$ points $x_1, \ldots, x_n \in \mathbb{R}^d$,
+the random map $f(x) = \frac{1}{\sqrt{k}} Ax$ with
+
+$$
+k = O\!\left(\frac{\log n}{\varepsilon^2}\right)
+$$
+
+satisfies, with positive probability, for **all pairs** $i \neq j$:
+
+$$
+(1 - \varepsilon)\,\|x_i - x_j\|^2
+\;\leq\;
+\|f(x_i) - f(x_j)\|^2
+\;\leq\;
+(1 + \varepsilon)\,\|x_i - x_j\|^2
+$$
+:::
+
+Three things to notice immediately:
+
+1. **$k$ does not depend on $d$.** No matter how high-dimensional the original
+   space, you can project to the same target dimension.
+2. **$k$ grows only logarithmically in $n$.** One million points requires roughly
+   twice the dimensions as one thousand points.
+3. The map is **random** — no clever structure required, just noise.
+
+---
+
+## Proof Outline: Union Bound Over All Pairs
+
+The proof assembles the concentration bound with a counting argument.
+
+**Step 1.** Apply linearity. Distance preservation between $x_i$ and $x_j$ is
+equivalent to norm preservation of the difference vector $v = x_i - x_j$, since
+$f$ is linear: $f(x_i) - f(x_j) = f(x_i - x_j)$.
+
+**Step 2.** Fix any one pair. By the concentration bound above:
+
+$$
+P\!\left(\text{pair } (i,j) \text{ is badly distorted}\right) \leq 2\, e^{-\varepsilon^2 k / 4}
+$$
+
+**Step 3.** There are $\binom{n}{2}$ pairs. By the union bound, the probability
+that **any** pair is badly distorted is at most:
+
+$$
+\binom{n}{2} \cdot 2\, e^{-\varepsilon^2 k / 4}
+\;<\;
+n^2\, e^{-\varepsilon^2 k / 4}
+$$
+
+**Step 4.** Set this less than 1 (guaranteeing existence of a good projection)
+and solve for $k$:
+
+$$
+n^2\, e^{-\varepsilon^2 k / 4} < 1
+\;\implies\;
+k > \frac{8 \log n}{\varepsilon^2}
+$$
+
+That's $k = O(\log n / \varepsilon^2)$. $\square$
+
+::: {.callout-tip}
+## The key move
+
+The proof uses randomness in a subtle way: we don't find a good projection
+explicitly — we show that a random one works with **positive probability**.
+That's enough to guarantee one exists. This "probabilistic method" argument
+recurs throughout the book.
+:::
+
+---
+
+## Simulation 1: Distance Preservation
+
+The lemma says projected distances are close to original distances.
+Let's verify directly. We generate 150 random points in $\mathbb{R}^{1000}$,
+project to $\mathbb{R}^{50}$, then compare all $\binom{150}{2} = 11{,}175$
+pairwise distances.
+
+```{r}
+#| label: fig-dist-preservation
+#| fig-cap: "Each point is a pair of observations. Perfect preservation would place all points on the red diagonal. Spread around the line reflects distortion from projecting to 50 dimensions."
+
+set.seed(3847)
+n <- 150; d <- 1000; k <- 50
+
+X      <- matrix(rnorm(n * d), nrow = n)
+A      <- matrix(rnorm(k * d), nrow = k) / sqrt(k)
+X_proj <- X %*% t(A)
+
+tibble(
+  original  = as.vector(dist(X)),
+  projected = as.vector(dist(X_proj))
+) |>
+  ggplot(aes(x = original, y = projected)) +
+  geom_point(alpha = 0.15, size = 0.6, color = medium_blue) +
+  geom_abline(slope = 1, intercept = 0, color = usaid_red, linewidth = 0.8) +
+  labs(
+    title    = "Pairwise distances before and after random projection",
+    subtitle = glue::glue("n = {n} points  |  d = {d}  →  k = {k}"),
+    x        = "Original distance  (ℝ¹⁰⁰⁰)",
+    y        = "Projected distance  (ℝ⁵⁰)"
+  )
+```
+
+---
+
+## Simulation 2: Effect of $k$ on Distortion
+
+The lemma says distortion shrinks as $k$ grows. We measure this with the
+**maximum distortion** across all pairs:
+
+$$
+\Delta_k = \max_{i \neq j} \left|\frac{\|f(x_i) - f(x_j)\|^2}{\|x_i - x_j\|^2} - 1\right|
+$$
+
+```{r}
+#| label: fig-distortion-k
+#| fig-cap: "Maximum distortion across all pairwise distances as a function of target dimension k. Dashed lines mark ε = 0.1 and ε = 0.2. Points are means over 20 random projections; ribbon shows ±1 SD."
+
+set.seed(9201)
+n <- 100; d <- 500
+ks <- c(5, 10, 20, 30, 50, 75, 100, 150, 200)
+reps <- 20
+
+X      <- matrix(rnorm(n * d), nrow = n)
+d_orig <- as.vector(dist(X))
+
+map_dfr(ks, \(k)
+  map_dfr(seq_len(reps), \(rep) {
+    d_proj <- as.vector(dist(X %*% t(matrix(rnorm(k * d), nrow = k) / sqrt(k))))
+    tibble(k = k, max_distortion = max(abs(d_proj^2 / d_orig^2 - 1)))
+  })
+) |>
+  summarise(mu = mean(max_distortion), sd = sd(max_distortion), .by = k) |>
+  ggplot(aes(x = k, y = mu)) +
+  geom_ribbon(aes(ymin = mu - sd, ymax = mu + sd), fill = medium_blue, alpha = 0.15) +
+  geom_line(color = medium_blue, linewidth = 0.9) +
+  geom_point(color = medium_blue, size = 2) +
+  geom_hline(yintercept = c(0.1, 0.2), linetype = "dashed",
+             color = usaid_red, linewidth = 0.5) +
+  annotate("text", x = max(ks) * 0.95, y = 0.115,
+           label = "ε = 0.1", color = usaid_red, hjust = 1, size = 3.5) +
+  annotate("text", x = max(ks) * 0.95, y = 0.215,
+           label = "ε = 0.2", color = usaid_red, hjust = 1, size = 3.5) +
+  labs(
+    title    = "Distortion decreases as target dimension k grows",
+    subtitle = glue::glue("n = {n} points  |  d = {d}  |  {reps} projections per k"),
+    x = "Target dimension  k",
+    y = "Maximum distortion  Δₖ"
+  )
+```
+
+---
+
+## Simulation 3: $k$ Is Independent of $d$
+
+The most counterintuitive feature: the required $k$ doesn't grow with $d$.
+We fix $n = 100$ and $k = 60$, then sweep $d$ across several orders of magnitude.
+If $d$ mattered, we'd see distortion rise. It doesn't.
+
+```{r}
+#| label: fig-k-vs-d
+#| fig-cap: "Maximum distortion at a fixed k = 60, across a range of original dimensions d (log scale). The flat trend confirms that distortion depends on n and k only — not on d."
+
+set.seed(5513)
+n <- 100; k <- 60
+ds <- c(100, 250, 500, 1000, 2000, 5000)
+reps <- 15
+
+map_dfr(ds, \(d)
+  map_dfr(seq_len(reps), \(rep) {
+    X      <- matrix(rnorm(n * d), nrow = n)
+    d_orig <- as.vector(dist(X))
+    d_proj <- as.vector(dist(X %*% t(matrix(rnorm(k * d), nrow = k) / sqrt(k))))
+    tibble(d = d, max_distortion = max(abs(d_proj^2 / d_orig^2 - 1)))
+  })
+) |>
+  summarise(mu = mean(max_distortion), sd = sd(max_distortion), .by = d) |>
+  ggplot(aes(x = d, y = mu)) +
+  geom_ribbon(aes(ymin = mu - sd, ymax = mu + sd), fill = medium_blue, alpha = 0.15) +
+  geom_line(color = medium_blue, linewidth = 0.9) +
+  geom_point(color = medium_blue, size = 2) +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    title    = "Distortion does not grow with original dimension d",
+    subtitle = glue::glue("n = {n} points  |  k = {k}  |  {reps} projections per d"),
+    x = "Original dimension  d  (log scale)",
+    y = "Maximum distortion  Δₖ"
+  )
+```
+
+---
+
+## Summary
+
+| Concept | Key point |
+|---------|-----------|
+| **Random projection map** | $f(x) = \frac{1}{\sqrt{k}} Ax$, $A$ with i.i.d. $\mathcal{N}(0,1)$ entries |
+| **Why it works** | Gaussian concentration: projected lengths are tightly concentrated around their expectation |
+| **JL Lemma** | $k = O(\log n / \varepsilon^2)$ suffices to preserve all $\binom{n}{2}$ pairwise distances within $(1 \pm \varepsilon)$ |
+| **Key surprise** | $k$ is independent of original dimension $d$ |
+| **Proof technique** | Concentration bound on one pair + union bound over all $\binom{n}{2}$ pairs |
+
+The Johnson-Lindenstrauss Lemma is not just a theoretical curiosity — it underlies
+dimensionality reduction in large-scale machine learning, locality-sensitive hashing,
+and compressed sensing. The same random projection idea recurs throughout the rest
+of the book.

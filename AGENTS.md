@@ -13,14 +13,14 @@ Course notes and learning activities in data science, organized around two activ
 
 | Activity | Folder | Memory file |
 |----------|--------|-------------|
-| Blum 2020 Course Notes | *(project root)* | `Blum 2020.md` |
+| Blum 2020 Course Notes | `Blum 2020/` | `Blum 2020/Blum 2020.md` |
 | Mathematics with Ming | `Mathematics with Ming/` | `Mathematics with Ming/Mathematics with Ming.md` |
 
 ```mermaid
 graph TD
     ROOT["📁 Foundations of Data Science<br/><i>AGENTS.md</i>"]
 
-    ROOT --> BLUM["📄 Blum 2020 Course Notes<br/><i>Blum 2020.md</i>"]
+    ROOT --> BLUM["📁 Blum 2020<br/><i>Blum 2020/Blum 2020.md</i>"]
     ROOT --> MWM["📁 Mathematics with Ming<br/><i>Mathematics with Ming.md</i>"]
 
     BLUM --> HDS["High Dimensional Space"]
@@ -46,3 +46,4 @@ Additional conventions not in the prep file:
 - Code chunks: visible by default; `#| echo: false` for plotting code and large widget blocks
 - `set.seed()` uses arbitrary integers (not 42/123)
 - Sections follow pattern: application → derivation → simulation/visualization
+- Each task has a paired `.R` and `.qmd` file. The `.R` file is primary — it holds all content, derivations, and scratch notes in labeled chunks (`# ---- chunk-name ----`). The `.qmd` extracts summative output via `knitr::read_chunk()`.

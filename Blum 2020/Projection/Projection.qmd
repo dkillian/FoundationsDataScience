@@ -1,0 +1,43 @@
+---
+title: "Projection"
+subtitle: "Random Projection and the Johnson-Lindenstrauss Lemma"
+author: "Dan Killian"
+date: today
+toc: true
+toc-depth: 3
+number-sections: false
+format:
+  html:
+    code-fold: true
+    page-layout: full
+execute:
+  keep-md: true
+  warning: false
+  message: false
+editor: visual
+reference-location: margin
+---
+
+```{r}
+#| label: read-chunks
+#| echo: false
+knitr::read_chunk("Projection.R")
+```
+
+```{r setup}
+#| echo: false
+```
+
+## Application: MNIST Digits
+
+```{r application-mnist}
+#| echo: false
+```
+
+```{r visualization-mnist}
+```
+
+## Derivation
+
+```{r derivation}
+```
