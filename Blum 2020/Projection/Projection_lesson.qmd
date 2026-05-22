@@ -25,6 +25,9 @@ execute:
 #| echo: false
 source("C:/Users/dkill/OneDrive/Documents/prep (May 2025).R")
 library(tidyverse)
+library(patchwork)
+library(MatchIt)
+library(hdm)
 ```
 
 ---
@@ -303,6 +306,200 @@ map_dfr(ds, \(d)
 
 ---
 
+## Application: OLS as Orthogonal Projection
+
+The Johnson-Lindenstrauss lemma projects onto a *random* subspace to compress
+high-dimensional data. But projection has an older and equally central role in
+statistics: **ordinary least squares is orthogonal projection** onto the column
+space of the design matrix.
+
+Given data $(y, X)$ with $y \in \mathbb{R}^n$ and $X \in \mathbb{R}^{n \times p}$,
+the OLS fitted values are:
+
+$$
+\hat{y} = X(X^\top X)^{-1} X^\top y = Hy
+$$
+
+where $H = X(X^\top X)^{-1} X^\top$ is the **hat matrix** — an orthogonal projection
+onto $\text{col}(X)$. The residual vector $e = y - \hat{y} = (I - H)y$ is the
+component of $y$ orthogonal to $\text{col}(X)$. This is not a metaphor; it is
+literally the same projection operation studied throughout this chapter.
+
+---
+
+### The Frisch-Waugh-Lovell Theorem
+
+The projection interpretation makes the Frisch-Waugh-Lovell (FWL) theorem almost
+obvious. Partition the design matrix as $X = [D \; W]$ where $D$ is a treatment
+variable of interest and $W$ is a matrix of controls. OLS gives a coefficient $\hat{\tau}$
+on $D$. FWL says:
+
+::: {.callout-note}
+## Frisch-Waugh-Lovell Theorem
+
+The OLS coefficient on $D$ from regressing $y$ on $[D \; W]$ equals the OLS
+coefficient from regressing $M_W y$ on $M_W D$, where $M_W = I - W(W^\top W)^{-1}W^\top$
+is the **annihilator matrix** — the projection onto the orthogonal complement of
+$\text{col}(W)$.
+:::
+
+In plain terms: controlling for $W$ in a regression is geometrically equivalent
+to projecting both $y$ and $D$ onto $\text{col}(W)^\perp$ and then finding
+their relationship in that residualized space. The coefficient is unchanged because
+the orthogonal decomposition of $\text{col}(X)$ into $\text{col}(W)$ and its complement
+partitions the information cleanly.
+
+This makes FWL a direct consequence of the geometry of orthogonal projection —
+not a separate algebraic result that requires independent verification.
+
+---
+
+### Example 1: LaLonde Job Training Data
+
+The LaLonde (1986) dataset is a classic in causal inference. The question is whether
+participation in a job training program (`treat`) raised 1978 earnings (`re78`).
+Controls include age, education, race, marital status, prior earnings, and an indicator
+for lacking a high school degree.
+
+```{r}
+#| label: lalonde-fwl
+data("lalonde")
+
+ctrl_fmla  <- re78 ~ age + educ + race + married + nodegree + re74 + re75
+full_fmla  <- re78 ~ treat + age + educ + race + married + nodegree + re74 + re75
+treat_fmla <- treat ~ age + educ + race + married + nodegree + re74 + re75
+
+tau_naive_l <- coef(lm(re78 ~ treat,  data = lalonde))["treat"]
+tau_full_l  <- coef(lm(full_fmla,     data = lalonde))["treat"]
+
+e_Y_l    <- residuals(lm(ctrl_fmla,   data = lalonde))
+e_D_l    <- residuals(lm(treat_fmla,  data = lalonde))
+tau_fw_l <- coef(lm(e_Y_l ~ e_D_l))["e_D_l"]
+```
+
+The naive (unadjusted) estimate is **`r scales::dollar(round(tau_naive_l, -2))`** —
+negative, suggesting job training *hurt* earnings. This is selection bias: program
+participants had substantially lower pre-treatment earnings than the comparison group,
+so the raw difference confounds the treatment effect with pre-existing disadvantage.
+
+After projecting out the controls (FWL), the estimate is
+**`r scales::dollar(round(tau_full_l, -2))`** — a positive and more credible effect.
+The two-panel visualization below shows this directly: the left panel is the
+raw between-group comparison; the right panel is the residualized space after
+$M_W$ has been applied to both $y$ and $D$.
+
+```{r}
+#| label: fig-lalonde
+#| fig-cap: "Left: raw group comparison. Right: both outcome and treatment residualized on controls (FWL). The FWL slope equals the full OLS coefficient exactly."
+#| echo: false
+
+lalonde_fw <- tibble(e_D = e_D_l, e_Y = e_Y_l)
+
+p_naive_l <- lalonde |>
+  mutate(treat = factor(treat, labels = c("Control", "Treated"))) |>
+  ggplot(aes(x = treat, y = re78)) +
+  geom_jitter(width = 0.15, alpha = 0.3, size = 0.8, color = medium_blue) +
+  geom_pointrange(
+    stat = "summary", fun = mean,
+    fun.min = \(x) mean(x) - sd(x) / sqrt(length(x)),
+    fun.max = \(x) mean(x) + sd(x) / sqrt(length(x)),
+    color = usaid_red, size = 0.5
+  ) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(title = "Raw comparison",
+       subtitle = glue::glue("τ̂ = {scales::dollar(round(tau_naive_l, -2))}"),
+       x = NULL, y = "1978 earnings (re78)")
+
+p_fw_l <- lalonde_fw |>
+  ggplot(aes(x = e_D, y = e_Y)) +
+  geom_point(alpha = 0.25, size = 0.8, color = medium_blue) +
+  geom_smooth(method = "lm", se = FALSE, color = usaid_red, linewidth = 0.9) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(title = "After projecting out controls  (FWL)",
+       subtitle = glue::glue("τ̂ = {scales::dollar(round(tau_fw_l, -2))}"),
+       x = "Residual treatment  ê_D", y = "Residual outcome  ê_Y")
+
+p_naive_l + p_fw_l +
+  plot_annotation(title = "Frisch-Waugh-Lovell: OLS as projection",
+                  subtitle = "LaLonde job training data  |  n = 614")
+```
+
+---
+
+### Example 2: 401(k) Pension Participation
+
+The 401(k) dataset (Chernozhukov & Hansen 2004) asks whether participation in
+a 401(k) plan (`p401`) raises net financial assets (`net_tfa`). With n = 9,915
+observations, the selection problem runs in the opposite direction from LaLonde:
+wealthier, higher-earning households are *more* likely to participate, so the
+naive comparison overstates the effect.
+
+```{r}
+#| label: pensions-fwl
+data("pension")
+
+ctrl_p  <- net_tfa ~ age + fsize + inc + educ + marr + twoearn + pira + nifa
+full_p  <- net_tfa ~ p401 + age + fsize + inc + educ + marr + twoearn + pira + nifa
+treat_p <- p401 ~ age + fsize + inc + educ + marr + twoearn + pira + nifa
+
+tau_naive_p <- coef(lm(net_tfa ~ p401, data = pension))["p401"]
+tau_full_p  <- coef(lm(full_p,          data = pension))["p401"]
+
+e_Y_p    <- residuals(lm(ctrl_p,  data = pension))
+e_D_p    <- residuals(lm(treat_p, data = pension))
+tau_fw_p <- coef(lm(e_Y_p ~ e_D_p))["e_D_p"]
+```
+
+The naive estimate is **`r scales::dollar(round(tau_naive_p, -2))`**; after
+projecting out covariates it falls to **`r scales::dollar(round(tau_full_p, -2))`**.
+The residualized scatter shows a clear positive slope even after removing the
+mechanical correlation between participation and pre-existing wealth.
+
+```{r}
+#| label: fig-pensions
+#| fig-cap: "Left: raw group comparison. Right: FWL residualized space. Projecting out wealth-correlated controls roughly halves the naive estimate."
+#| echo: false
+
+pension_fw <- tibble(e_D = e_D_p, e_Y = e_Y_p)
+
+p_naive_p <- pension |>
+  mutate(p401 = factor(p401, labels = c("Non-participant", "Participant"))) |>
+  ggplot(aes(x = p401, y = net_tfa)) +
+  geom_jitter(width = 0.15, alpha = 0.08, size = 0.4, color = medium_blue) +
+  geom_pointrange(
+    stat = "summary", fun = mean,
+    fun.min = \(x) mean(x) - sd(x) / sqrt(length(x)),
+    fun.max = \(x) mean(x) + sd(x) / sqrt(length(x)),
+    color = usaid_red, size = 0.5
+  ) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(title = "Raw comparison",
+       subtitle = glue::glue("τ̂ = {scales::dollar(round(tau_naive_p, -2))}"),
+       x = NULL, y = "Net financial assets")
+
+p_fw_p <- pension_fw |>
+  ggplot(aes(x = e_D, y = e_Y)) +
+  geom_point(alpha = 0.08, size = 0.4, color = medium_blue) +
+  geom_smooth(method = "lm", se = FALSE, color = usaid_red, linewidth = 0.9) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(title = "After projecting out controls  (FWL)",
+       subtitle = glue::glue("τ̂ = {scales::dollar(round(tau_fw_p, -2))}"),
+       x = "Residual treatment  ê_D", y = "Residual outcome  ê_Y")
+
+p_naive_p + p_fw_p +
+  plot_annotation(title = "Frisch-Waugh-Lovell: OLS as projection",
+                  subtitle = "401(k) pension data  |  n = 9,915")
+```
+
+The two examples make a complementary pair: LaLonde illustrates *negative* selection
+(treated units are disadvantaged), pensions illustrates *positive* selection (treated
+units are advantaged). In both cases, the FWL projection reveals a treatment effect
+that the raw comparison obscures — and in both cases the mechanism is identical:
+remove the component of both $y$ and $D$ that lies in $\text{col}(W)$, and examine
+what remains.
+
+---
+
 ## Summary
 
 | Concept | Key point |
@@ -312,6 +509,9 @@ map_dfr(ds, \(d)
 | **JL Lemma** | $k = O(\log n / \varepsilon^2)$ suffices to preserve all $\binom{n}{2}$ pairwise distances within $(1 \pm \varepsilon)$ |
 | **Key surprise** | $k$ is independent of original dimension $d$ |
 | **Proof technique** | Concentration bound on one pair + union bound over all $\binom{n}{2}$ pairs |
+| **OLS as projection** | $\hat{y} = Hy$ where $H = X(X^\top X)^{-1}X^\top$ projects $y$ onto $\text{col}(X)$ |
+| **FWL Theorem** | Controlling for $W$ = projecting $y$ and $D$ onto $\text{col}(W)^\perp$; coefficient is unchanged |
+| **Selection bias** | LaLonde (negative selection) and pensions (positive selection) illustrate FWL correcting in opposite directions |
 
 The Johnson-Lindenstrauss Lemma is not just a theoretical curiosity — it underlies
 dimensionality reduction in large-scale machine learning, locality-sensitive hashing,

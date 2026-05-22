@@ -10,6 +10,9 @@ source("C:/Users/dkill/OneDrive/Documents/prep (May 2025).R")
 library(tidyverse)
 library(dslabs)
 library(glue)
+library(patchwork)
+library(MatchIt)   # lalonde data
+library(hdm)       # pension data
 
 
 # ---- application-mnist ----------------------------------------------------
@@ -108,6 +111,140 @@ p_dist <- mnist_results |>
     subtitle = glue("MNIST digits  |  n = {n}  |  d = {d}"),
     x        = "Target dimension  k",
     y        = "Maximum distortion  Δₖ"
+  )
+
+
+# ---- application-lalonde --------------------------------------------------
+# LaLonde (1986) / Dehejia-Wahba (1999) job training data.
+# Causal question: does job training (treat) raise 1978 earnings (re78)?
+# Illustrates OLS-as-projection via the Frisch-Waugh-Lovell theorem:
+# controlling for covariates = projecting both Y and D onto the orthogonal
+# complement of the control subspace, then regressing residual on residual.
+# The coefficient is identical to full OLS — guaranteed by FWL.
+
+data("lalonde")
+
+ctrl_fmla  <- re78 ~ age + educ + race + married + nodegree + re74 + re75
+full_fmla  <- re78 ~ treat + age + educ + race + married + nodegree + re74 + re75
+treat_fmla <- treat ~ age + educ + race + married + nodegree + re74 + re75
+
+tau_naive_l <- coef(lm(re78 ~ treat, data = lalonde))["treat"]
+tau_full_l  <- coef(lm(full_fmla,    data = lalonde))["treat"]
+
+# Project out controls from both Y and D; regress residual on residual
+e_Y_l <- residuals(lm(ctrl_fmla,  data = lalonde))
+e_D_l <- residuals(lm(treat_fmla, data = lalonde))
+tau_fw_l <- coef(lm(e_Y_l ~ e_D_l))["e_D_l"]
+
+stopifnot(isTRUE(all.equal(tau_full_l, tau_fw_l, check.names = FALSE)))
+
+lalonde_fw <- tibble(e_D = e_D_l, e_Y = e_Y_l)
+
+names(lalonde)
+
+l1 <- lm(re78 ~ treat + age + educ + race + married + nodegree + re74 + re75,
+         data=lalonde)
+summary(l1)
+
+
+# ---- visualization-lalonde ------------------------------------------------
+
+p_naive_l <- lalonde |>
+  mutate(treat = factor(treat, labels = c("Control", "Treated"))) |>
+  ggplot(aes(x = treat, y = re78)) +
+  geom_jitter(width = 0.15, alpha = 0.3, size = 0.8, color = medium_blue) +
+  geom_pointrange(
+    stat = "summary", fun = mean,
+    fun.min = \(x) mean(x) - sd(x) / sqrt(length(x)),
+    fun.max = \(x) mean(x) + sd(x) / sqrt(length(x)),
+    color = usaid_red, size = 0.5
+  ) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(
+    title    = "Raw comparison",
+    subtitle = glue("τ̂ = {scales::dollar(round(tau_naive_l, -2))}"),
+    x        = NULL,
+    y        = "1978 earnings (re78)"
+  )
+
+p_fw_l <- lalonde_fw |>
+  ggplot(aes(x = e_D, y = e_Y)) +
+  geom_point(alpha = 0.25, size = 0.8, color = medium_blue) +
+  geom_smooth(method = "lm", se = FALSE, color = usaid_red, linewidth = 0.9) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(
+    title    = "After projecting out controls  (FWL)",
+    subtitle = glue("τ̂ = {scales::dollar(round(tau_fw_l, -2))}"),
+    x        = "Residual treatment  ê_D",
+    y        = "Residual outcome  ê_Y"
+  )
+
+p_naive_l + p_fw_l +
+  plot_annotation(
+    title    = "Frisch-Waugh-Lovell: OLS as projection",
+    subtitle = "LaLonde job training data  |  n = 614"
+  )
+
+
+# ---- application-pensions -------------------------------------------------
+# 401(k) pension eligibility data (Chernozhukov & Hansen 2004, via hdm).
+# Causal question: does 401(k) participation (p401) raise net financial assets?
+# Same FWL projection geometry as LaLonde; larger n (≈ 9,915), richer covariates.
+
+data("pension")
+
+ctrl_p    <- net_tfa ~ age + fsize + inc + educ + marr + twoearn + pira + nifa
+full_p    <- net_tfa ~ p401 + age + fsize + inc + educ + marr + twoearn + pira + nifa
+treat_p   <- p401 ~ age + fsize + inc + educ + marr + twoearn + pira + nifa
+
+tau_naive_p <- coef(lm(net_tfa ~ p401, data = pension))["p401"]
+tau_full_p  <- coef(lm(full_p,          data = pension))["p401"]
+
+e_Y_p <- residuals(lm(ctrl_p,  data = pension))
+e_D_p <- residuals(lm(treat_p, data = pension))
+tau_fw_p <- coef(lm(e_Y_p ~ e_D_p))["e_D_p"]
+
+stopifnot(isTRUE(all.equal(tau_full_p, tau_fw_p, check.names = FALSE)))
+
+pension_fw <- tibble(e_D = e_D_p, e_Y = e_Y_p)
+
+
+# ---- visualization-pensions -----------------------------------------------
+
+p_naive_p <- pension |>
+  mutate(p401 = factor(p401, labels = c("Non-participant", "Participant"))) |>
+  ggplot(aes(x = p401, y = net_tfa)) +
+  geom_jitter(width = 0.15, alpha = 0.08, size = 0.4, color = medium_blue) +
+  geom_pointrange(
+    stat = "summary", fun = mean,
+    fun.min = \(x) mean(x) - sd(x) / sqrt(length(x)),
+    fun.max = \(x) mean(x) + sd(x) / sqrt(length(x)),
+    color = usaid_red, size = 0.5
+  ) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(
+    title    = "Raw comparison",
+    subtitle = glue("τ̂ = {scales::dollar(round(tau_naive_p, -2))}"),
+    x        = NULL,
+    y        = "Net financial assets"
+  )
+
+p_fw_p <- pension_fw |>
+  ggplot(aes(x = e_D, y = e_Y)) +
+  geom_point(alpha = 0.08, size = 0.4, color = medium_blue) +
+  geom_smooth(method = "lm", se = FALSE, color = usaid_red, linewidth = 0.9) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-3, suffix = "K")) +
+  labs(
+    title    = "After projecting out controls  (FWL)",
+    subtitle = glue("τ̂ = {scales::dollar(round(tau_fw_p, -2))}"),
+    x        = "Residual treatment  ê_D",
+    y        = "Residual outcome  ê_Y"
+  )
+
+p_naive_p + p_fw_p +
+  plot_annotation(
+    title    = "Frisch-Waugh-Lovell: OLS as projection",
+    subtitle = "401(k) pension data  |  n ≈ 9,915"
   )
 
 
